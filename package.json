@@ -3,10 +3,18 @@
   "version": "1.0.0",
   "description": "",
   "main": "index.js",
+  "browserslist": [
+    ">3%",
+    "last 2 iOS major versions",
+    "last 2 Safari major versions",
+    "last 2 Firefox major versions",
+    "last 1 Edge major versions"
+  ],
   "dependencies": {
     "vue": "^2.5.13"
   },
   "devDependencies": {
+    "autoprefixer": "^8.0.0",
     "babel-core": "^6.26.0",
     "babel-eslint": "^8.2.1",
     "babel-loader": "^7.1.2",
@@ -20,6 +28,7 @@
     "eslint-plugin-import": "^2.8.0",
     "eslint-plugin-vue": "^4.2.2",
     "node-sass": "^4.7.2",
+    "postcss-loader": "^2.1.0",
     "sass-loader": "^6.0.6",
     "uglifyjs-webpack-plugin": "^1.1.8",
     "vue-eslint-parser": "^2.0.2",
