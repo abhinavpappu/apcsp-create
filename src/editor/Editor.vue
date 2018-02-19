@@ -6,15 +6,22 @@
     @keydown.left.stop.prevent="moveCursorCharacter(-1)"
     @keydown.up.stop.prevent="moveCursorLine(-1)"
     @keydown.down.stop.prevent="moveCursorLine(1)"
+    @keydown.ctrl="specialKey($event)"
+    @keydown.meta="specialKey($event)"
     @keydown="typeCharacter($event)">
+    <textarea class="copy-input" ref="copy-input"/>
     <div class="cursor" ref="cursor"/>
-    <!-- <div class="line-numbers">
-      <div class="number" v-for="(_, index) in lines">{{ index + 1 }}</div>
-    </div> -->
     <div class="lines">
       <div class="line" v-for="(line, i) in lines" @mousedown="moveCursor(i, undefined, true)" ref="lines">
-        <span class="line-number">{{ i + 1 }} </span>
-        <span class="char" v-for="(character, j) in line" @mousedown.stop="moveCursor(i, j)">{{ character }}</span>
+        <span class="line-number">{{ `${' '.repeat(numSpaces(i + 1))}${i + 1}` }} </span>
+        <span
+          class="char"
+          v-for="(character, j) in line"
+          @mousedown.stop="moveCursor(i, j)"
+          :data-line="i"
+          :data-char="j"
+          :data-editor-id="editorId"
+        >{{ character }}</span>
       </div>
     </div>
   </div>
@@ -24,7 +31,8 @@
 export default {
   data() {
     return {
-      lines: ['Hi, this is a', 'fsdijflsjflsdj', 'jkslk', 'a', 'hello'],
+      editorId: String(Math.random()),
+      lines: ['abcdefg', 'hijklmnop', 'qrstuv', 'wxyz'],
       cursor: {
         line: 0,
         character: 0,
@@ -35,6 +43,9 @@ export default {
     formattedLines() {
       return this.lines.map(line => line.split());
     },
+    maxSpaces() {
+      return String(this.lines.length).length;
+    },
   },
   watch: {
     cursor: {
@@ -42,6 +53,9 @@ export default {
         this.updateCursorPosition();
       },
       deep: true,
+    },
+    maxSpaces() {
+      this.updateCursorPosition();
     },
   },
   mounted() {
@@ -53,6 +67,64 @@ export default {
       Object.keys(styles).forEach(property => {
         elementStyles[property] = styles[property];
       });
+    },
+    numSpaces(number) {
+      return this.maxSpaces - String(number).length;
+    },
+    replaceLine(newLine, lineNum) {
+      this.lines.splice(lineNum, 1, newLine);
+    },
+    removeLine(lineNum) {
+      this.lines.splice(lineNum, 1);
+    },
+    addLine(newLine, lineNum) {
+      this.lines.splice(lineNum, 0, newLine);
+    },
+    getSelectionRange() {
+      const selection = window.getSelection();
+      if (selection.type === 'Range') {
+        let { anchorNode: start, focusNode: end } = selection;
+        [start, end] = [start, end].map(node => ((node.nodeType === 3) ? node.parentElement : node));
+
+        // check if selected text is in this editor
+        if (start.dataset.editorId !== this.editorId || end.dataset.editorId !== this.editorId) {
+          return false;
+        }
+
+        [start, end] = [start, end].map(node => {
+          let { dataset: { line, char } } = node;
+          [line, char] = [line, char].map(Number);
+          return { line, char };
+        });
+
+        if (start.line > end.line || (start.line === end.line && start.char > end.char)) {
+          [start, end] = [end, start];
+        }
+
+        return [start, end];
+      }
+      return false;
+    },
+    emptySelection() {
+      if (this.getSelectionRange()) {
+        window.getSelection().empty();
+      }
+    },
+    getSelectedText() {
+      const range = this.getSelectionRange();
+      if (range) {
+        const [start, end] = range;
+
+        if (start.line === end.line) {
+          return this.lines[start.line].slice(start.char, end.char + 1);
+        }
+
+        let text = this.lines[start.line].slice(start.char);
+        text += `\n${this.lines.slice(start.line + 1, end.line).map(str => `${str}\n`).join('')}`;
+        text += this.lines[end.line].slice(0, end.char + 1);
+        return text;
+      }
+      return '';
     },
     updateCursorPosition() {
       this.$nextTick(() => {
@@ -89,6 +161,8 @@ export default {
       this.cursor.character = constrain(character, 0);
       if (line >= this.lines.length) {
         this.cursor.character = Math.max(this.lines[this.cursor.line].length, this.cursor.character);
+      } else if (line < 0) {
+        this.cursor.character = 0;
       }
       if (cap) this.capCursor();
       this.pauseCursorBlink();
@@ -118,53 +192,97 @@ export default {
         }, duration);
       }
     },
+    deleteSelectedText() {
+      const range = this.getSelectionRange();
+      if (range) {
+        const [start, end] = range;
+
+        if (start.line === end.line) {
+          const line = this.lines[start.line];
+          this.replaceLine(`${line.slice(0, start.char)}${line.slice(end.char + 1, line.length)}`, start.line);
+        } else {
+          const newStart = this.lines[start.line].slice(0, start.char);
+          const newEnd = this.lines[end.line].slice(end.char + 1);
+          this.replaceLine(`${newStart}${newEnd}`, start.line);
+          this.removeLine(end.line);
+          for (let i = end.line - 1; i > start.line; i--) {
+            this.removeLine(i);
+          }
+        }
+
+        this.emptySelection();
+        this.moveCursor(start.line, start.char);
+      }
+    },
     typeCharacter(e) {
-      const allowed = '`1234567890-=qwertyuiop[]\\asdfghjkl;\'zxcvbnm,./~!@#$%^&*()_+{}|:"<>? ';
-      const special = ['Backspace', 'Delete', 'Enter'];
-      if (!(e.ctrlKey || e.altKey) && allowed.split('').concat(special).indexOf(e.key) > -1) {
+      const allowed = '`1234567890-=qwertyuiop[]\\asdfghjkl;\'zxcvbnm,./~!@#$%^&*()_+{}|:"<>? '.split('');
+      const special = 'backspace,delete,enter'.split(',');
+      if (!(e.ctrlKey || e.altKey) && allowed.concat(special).indexOf(e.key.toLowerCase()) > -1) {
+        // to prevent an additional delete or backspace command when there is selected text
+        let noDelete = false;
+        if (this.getSelectedText()) {
+          this.deleteSelectedText();
+          noDelete = true;
+        }
+
         this.capCursor();
         const { character, line } = this.cursor;
-        const replaceLine = (newLine, l = line) => this.lines.splice(l, 1, newLine);
-        const removeLine = (l = line) => this.lines.splice(l, 1);
-        const addLine = (newLine, l = line + 1) => this.lines.splice(l, 0, newLine);
-
         const oldLine = this.lines[line];
         if (allowed.indexOf(e.key.toLowerCase()) > -1) {
           const newLine = `${oldLine.slice(0, character)}${e.key}${oldLine.slice(character)}`;
 
-          replaceLine(newLine);
+          this.replaceLine(newLine, line);
           this.moveCursorCharacter();
-        } else if (e.key === 'Backspace') {
+        } else if (e.key === 'Backspace' && !noDelete) {
           if (character > 0) {
             const newLine = `${oldLine.slice(0, character - 1)}${oldLine.slice(character)}`;
 
-            replaceLine(newLine);
+            this.replaceLine(newLine, line);
             this.moveCursorCharacter(-1, false);
           } else if (line > 0) {
             const newLine = `${this.lines[line - 1]}${oldLine}`;
             const previousLineLength = this.lines[line - 1].length;
 
-            replaceLine(newLine, line - 1);
-            removeLine();
+            this.replaceLine(newLine, line - 1);
+            this.removeLine(line);
             this.moveCursor(line - 1, previousLineLength);
           }
-        } else if (e.key === 'Delete') {
+        } else if (e.key === 'Delete' && !noDelete) {
           if (character < this.lines[line].length) {
             const newLine = `${oldLine.slice(0, character)}${oldLine.slice(character + 1)}`;
 
-            replaceLine(newLine);
+            this.replaceLine(newLine, line);
           } else if (line < this.lines.length - 1) {
             const newLine = `${oldLine}${this.lines[line + 1]}`;
 
-            replaceLine(newLine);
-            removeLine(line + 1);
+            this.replaceLine(newLine, line);
+            this.removeLine(line + 1);
           }
         } else if (e.key === 'Enter') {
           const newLine1 = `${oldLine.slice(0, character)}`;
           const newLine2 = `${oldLine.slice(character)}`;
-          replaceLine(newLine1);
-          addLine(newLine2);
+          this.replaceLine(newLine1, line);
+          this.addLine(newLine2, line + 1);
           this.moveCursor(line + 1, 0);
+        }
+      }
+    },
+    specialKey(e) {
+      const keys = 'c,x,v'.split(',');
+
+      if (!e.altKey && keys.indexOf(e.key) > -1) {
+        e.preventDefault();
+        e.stopPropagation();
+
+        const selectedText = this.getSelectedText();
+        if ((e.key === 'c' || e.key === 'x') && selectedText) {
+          const $copyInput = this.$refs['copy-input'];
+          $copyInput.value = selectedText;
+          if (e.key === 'x') this.deleteSelectedText();
+          $copyInput.select();
+          document.execCommand('copy');
+        } else if (e.key === 'v') {
+          this.deleteSelectedText();
         }
       }
     },
@@ -174,13 +292,17 @@ export default {
 
 <style lang="sass" scoped>
 .editor
-  display: flex
   font-family: monospace
-  font-size: 1.1em
+  font-size: 1.2em
   cursor: text
 
   &:focus
     outline: none
+
+  .copy-input
+    position: fixed;
+    top: -9999px;
+    left: -9999px;
 
   .cursor
     position: absolute
@@ -193,21 +315,12 @@ export default {
     &.no-blink
       animation: none
 
-  .line-numbers
-    width: 20px
-
-    .number
-      user-select: none
-
   .lines
-    flex-grow: 1
-
     .line
       display: flex
       white-space: pre
 
       .line-number
-        -webkit-user-select: none
         user-select: none
 
 @keyframes blink
