@@ -128,6 +128,7 @@ export default {
       const { input } = this.$refs;
       const value = this.inputValue;
       if (value.length >= 3 && input.selectionStart === value.length - 1) {
+        this.deleteSelection();
         this.insertText(value.slice(1, value.length - 1));
       } else if (value.length === 1) {
         if (input.selectionStart === 0) {
@@ -148,13 +149,13 @@ export default {
         newText = newText.replace(new RegExp(char, 'g'), specialCharacters[char]);
       });
       this.text = `${this.text.slice(0, this.cursor)}${newText}${this.text.slice(this.cursor)}`;
-      this.cursor += newText.length;
+      this.moveCursor(newText.length);
     },
     backspace(amount = 1) {
       if (this.selectedText) {
         this.deleteSelection();
       } else {
-        this.text = `${this.text.slice(0, this.cursor - amount)}${this.text.slice(this.cursor)}`;
+        this.text = `${this.text.slice(0, Math.max(this.cursor - amount, 0))}${this.text.slice(this.cursor)}`;
         this.moveCursor(-amount);
       }
     },
@@ -186,22 +187,23 @@ export default {
       }
     },
     moveCursor(amount, shift) {
-      if (shift) {
-        this.addToSelection(this.cursor + amount);
-      } else {
-        this.clearSelection();
-      }
-      this.setCursor(this.cursor + amount);
-    },
-    moveLine(amount, shift) {
-      const { line, char } = this.position;
-      const cursor = this.positionToCursor({ line: line + amount, char });
+      const cursor = this.cursor + amount
+      this.setCursor(cursor);
       if (shift) {
         this.addToSelection(cursor);
       } else {
         this.clearSelection();
       }
+    },
+    moveLine(amount, shift) {
+      const { line, char } = this.position;
+      const cursor = this.positionToCursor({ line: line + amount, char });
       this.setCursor(cursor);
+      if (shift) {
+        this.addToSelection(cursor);
+      } else {
+        this.clearSelection();
+      }
     },
     select(start = 0, end = Infinity) {
       const constrain = val => Math.min(Math.max(0, val), this.text.length);
