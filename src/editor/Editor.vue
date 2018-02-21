@@ -1,15 +1,19 @@
 <template>
   <div
     class="editor"
-    tabindex="-1"
-    @keydown.right.stop.prevent="moveCursorCharacter(1)"
-    @keydown.left.stop.prevent="moveCursorCharacter(-1)"
-    @keydown.up.stop.prevent="moveCursorLine(-1)"
-    @keydown.down.stop.prevent="moveCursorLine(1)"
-    @keydown.ctrl="specialKey($event)"
-    @keydown.meta="specialKey($event)"
-    @keydown="typeCharacter($event)">
-    <textarea class="copy-input" ref="copy-input"/>
+    ref="editor"
+    @mousedown="isMouseDown = $event"
+    @mouseup="isMouseDown = false">
+    <textarea
+      class="input"
+      ref="input"
+      @keydown.right.stop.prevent="moveCursorCharacter(1)"
+      @keydown.left.stop.prevent="moveCursorCharacter(-1)"
+      @keydown.up.stop.prevent="moveCursorLine(-1)"
+      @keydown.down.stop.prevent="moveCursorLine(1)"
+      @keydown.ctrl="specialKey($event)"
+      @keydown.meta="specialKey($event)"
+      @keydown="typeCharacter($event)"/>
     <div class="cursor" ref="cursor"/>
     <div class="lines">
       <div class="line" v-for="(line, i) in lines" @mousedown="moveCursor(i, undefined, true)" ref="lines">
@@ -18,9 +22,7 @@
           class="char"
           v-for="(character, j) in line"
           @mousedown.stop="moveCursor(i, j)"
-          :data-line="i"
-          :data-char="j"
-          :data-editor-id="editorId"
+          ref="char"
         >{{ character }}</span>
       </div>
     </div>
@@ -31,12 +33,14 @@
 export default {
   data() {
     return {
+      isMouseDown: false,
       editorId: String(Math.random()),
       lines: ['abcdefg', 'hijklmnop', 'qrstuv', 'wxyz'],
       cursor: {
         line: 0,
         character: 0,
       },
+      selectedText: '',
     };
   },
   computed: {
@@ -80,6 +84,21 @@ export default {
     addLine(newLine, lineNum) {
       this.lines.splice(lineNum, 0, newLine);
     },
+    charToLocation(index) {
+      const location = { line: 0, char: index };
+      while (location.char >= this.lines[location.line].length) {
+        location.char -= this.lines[location.line].length;
+        location.line++;
+      }
+      return location;
+    },
+    locationToChar({ line, char }) {
+      let index = char;
+      for (let i = 0; i < line; i++) {
+        index += this.lines[i].length;
+      }
+      return index;
+    },
     getSelectionRange() {
       const selection = window.getSelection();
       if (selection.type === 'Range') {
@@ -110,21 +129,42 @@ export default {
         window.getSelection().empty();
       }
     },
-    getSelectedText() {
-      const range = this.getSelectionRange();
-      if (range) {
-        const [start, end] = range;
+    onMouseMove(e) {
+      if (this.isMouseDown) {
+        let [start, end] = [this.isMouseDown.target, e.target];
+        [start, end] = [start, end].forEach($element => {
+          if ($element.classList.contains('line')) {
+            const line = this.$refs.line.indexOf($element);
+            const char = $element.querySelector('.char').length;
+            return { line, char };
+          }
+          return this.charToLocation(this.$refs.char.indexOf($element));
+        });
 
-        if (start.line === end.line) {
-          return this.lines[start.line].slice(start.char, end.char + 1);
+        if (start.line > end.line || (start.line === end.line && start.char > end.char)) {
+          [start, end] = [end, start];
         }
 
-        let text = this.lines[start.line].slice(start.char);
-        text += `\n${this.lines.slice(start.line + 1, end.line).map(str => `${str}\n`).join('')}`;
-        text += this.lines[end.line].slice(0, end.char + 1);
-        return text;
+        this.selectText(start, end);
       }
-      return '';
+    },
+    selectText(start, end) {
+
+
+      // const range = this.getSelectionRange();
+      // if (range) {
+      //   const [start, end] = range;
+
+      //   if (start.line === end.line) {
+      //     return this.lines[start.line].slice(start.char, end.char + 1);
+      //   }
+
+      //   let text = this.lines[start.line].slice(start.char);
+      //   text += `\n${this.lines.slice(start.line + 1, end.line).map(str => `${str}\n`).join('')}`;
+      //   text += this.lines[end.line].slice(0, end.char + 1);
+      //   return text;
+      // }
+      // return '';
     },
     updateCursorPosition() {
       this.$nextTick(() => {
@@ -329,4 +369,5 @@ export default {
   50%
     opacity: 0
 
+// #3390FF
 </style>
