@@ -48,7 +48,7 @@ export default {
   width: 1px
   height: 15px
   background-color: black
-  transition: left .1s, top .1s
+  transition: left .05s, top .05s
   animation: blink 1s steps(1, end) infinite
 
   &.no-blink
