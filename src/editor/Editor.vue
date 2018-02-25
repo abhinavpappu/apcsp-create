@@ -3,6 +3,7 @@
     class="editor"
     tabindex="-1"
     @focus="focusInput"
+    :style="{ height: Number(height) ? `${height}px` : height }"
     ref="editor">
     <textarea
       class="input"
@@ -50,6 +51,7 @@ import TextCursor from './TextCursor.vue';
 
 export default {
   props: {
+    height: { type: [Number, String], default: '100%' },
     initialText: { type: String, default: 'IF(CAN_MOVE(forward)) {\n  MOVE_FORWARD()\n}' },
   },
   data() {
@@ -110,8 +112,8 @@ export default {
     },
     cursorToPosition(cursor) {
       const subtext = this.text.slice(0, cursor);
-      const lastNewLine = subtext.lastIndexOf('');
-      const line = subtext.split('').length - 1;
+      const lastNewLine = subtext.lastIndexOf('\n');
+      const line = subtext.split('\n').length - 1;
       const char = cursor - lastNewLine - 1;
       return { line, char };
     },
@@ -306,15 +308,6 @@ export default {
       }
       return diff;
     },
-    // addChanges() {
-    //   const diff = this.diff(this.lastText, this.text);
-    //   const { lastDiff } = this;
-    //   if (!lastDiff || (lastDiff.start === diff.start && diff.text.includes(lastDiff.text))) {
-    //     this.lastDiff = diff;
-    //   } else {
-    //     this.saveChanges();
-    //   }
-    // },
     saveChanges() {
       const diff = this.diff(this.lastText, this.text);
       if (diff) {
@@ -390,6 +383,7 @@ export default {
   font-size: .9em
   cursor: text
   user-select: none
+  overflow: auto
 
   .input
     position: fixed

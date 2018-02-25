@@ -20,5 +20,6 @@ module.exports = {
       "vue/max-attributes-per-line": ["error", {"singleline": 4}],
       "no-bitwise": "off",
       "vue/require-v-for-key": "off",
+      "no-param-reassign": "off",
   }
 };
