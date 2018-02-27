@@ -21,5 +21,6 @@ module.exports = {
       "no-bitwise": "off",
       "vue/require-v-for-key": "off",
       "no-param-reassign": "off",
+      "no-nested-ternary": "off",
   }
 };

@@ -15,7 +15,7 @@ export default {
     width: { type: Number, required: true },
     top: { type: Number, required: true },
     left: { type: Number, required: true },
-    direction: { type: Number, required: true },
+    orientation: { type: Number, required: true },
     animationDuration: { type: Number, default: 400 },
   },
   computed: {
@@ -45,12 +45,12 @@ export default {
       const $triangle = this.$refs.triangle;
       const current = $triangle ? $triangle.style.transform : 'rotate(0deg)';
       const rotation = Number(current.substring(current.indexOf('(') + 1, current.indexOf('deg')));
-      let newRotation = this.direction;
-      if (mod360(rotation + 90) === mod360(this.direction)) { // turn right
+      let newRotation = this.orientation;
+      if (mod360(rotation + 90) === mod360(this.orientation)) { // turn right
         newRotation = rotation + 90;
-      } else if (mod360(rotation - 90) === mod360(this.direction)) { // turn left
+      } else if (mod360(rotation - 90) === mod360(this.orientation)) { // turn left
         newRotation = rotation - 90;
-      } else if (mod360(rotation) === mod360(this.direction)) { // no turn
+      } else if (mod360(rotation) === mod360(this.orientation)) { // no turn
         newRotation = rotation;
       }
       // else it is turning 180deg and it doesn't matter which way it turns

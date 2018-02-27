@@ -52,7 +52,7 @@ import TextCursor from './TextCursor.vue';
 export default {
   props: {
     height: { type: [Number, String], default: '100%' },
-    initialText: { type: String, default: 'IF(CAN_MOVE(forward)) {\n  MOVE_FORWARD()\n}' },
+    initialText: { type: String, default: '' },
   },
   data() {
     return {
@@ -104,6 +104,10 @@ export default {
     },
   },
   methods: {
+    setText(text) {
+      this.text = text;
+      this.$emit('input', text);
+    },
     spaces(number) {
       return ' '.repeat(this.maxSpaces - String(number).length);
     },
@@ -156,7 +160,7 @@ export default {
       Object.keys(specialCharacters).forEach(char => {
         newText = newText.replace(new RegExp(char, 'g'), specialCharacters[char]);
       });
-      this.text = `${this.text.slice(0, location)}${newText}${this.text.slice(location)}`;
+      this.setText(`${this.text.slice(0, location)}${newText}${this.text.slice(location)}`);
       if (save) this.saveChanges();
       return newText;
     },
@@ -167,7 +171,7 @@ export default {
     deleteText(from, to, save = true) {
       const [start, end] = (from > to ? [to, from] : [from, to]).map(x => this.constrain(x));
       const deletedText = this.text.slice(start, end);
-      this.text = `${this.text.slice(0, start)}${this.text.slice(end)}`;
+      this.setText(`${this.text.slice(0, start)}${this.text.slice(end)}`);
       if (save) this.saveChanges();
       return deletedText;
     },

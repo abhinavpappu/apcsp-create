@@ -1,12 +1,15 @@
-export default (code, globals) => {
+export default (code, $_add = {}) => {
+  const globals = Object.getOwnPropertyNames(window);
+  globals.splice(globals.indexOf('eval'), 1);
+
   let removeGlobals = '';
-  Object.getOwnPropertyNames(this).forEach(property => {
+  globals.forEach(property => {
     removeGlobals += `var ${property} = undefined;`;
   });
 
   let addGlobals = '';
-  Object.keys(globals).forEach(global => {
-    addGlobals = `var ${global} = globals['${global}'];`;
+  Object.keys($_add).forEach(key => {
+    addGlobals += `var ${key} = $_add['${key}'];`;
   });
 
   const newCode = `${removeGlobals}${addGlobals}${code}`;

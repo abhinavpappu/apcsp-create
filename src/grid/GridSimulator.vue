@@ -21,6 +21,7 @@ import GridOptions from './GridOptions.vue';
 
 export default {
   props: {
+    delay: { type: Number, default: 400 },
   },
   data() {
     return {
@@ -28,7 +29,7 @@ export default {
         width: 0,
         height: 0,
         position: [0, 0],
-        direction: 1, // 0 - NORTH, 1 - EAST, 2 - SOUTH, 3 - WEST
+        orientation: 1, // 0 - NORTH, 1 - EAST, 2 - SOUTH, 3 - WEST
       },
       dimensions: {
         horizontal: 3,
@@ -44,7 +45,8 @@ export default {
         height: this.arrow.height,
         left: this.getSquareWidth() * x,
         top: this.getSquareHeight() * y,
-        direction: [-90, 0, 90, 180][this.arrow.direction],
+        orientation: [-90, 0, 90, 180][this.arrow.orientation],
+        animationDuration: this.delay,
       };
     },
   },
@@ -61,32 +63,53 @@ export default {
       this.arrow.width = this.getSquareWidth();
       this.arrow.height = this.getSquareHeight();
     },
-    setArrowPosition(position) {
-      if (this.$refs.grid.canMoveTo(position)) {
-        this.arrow.position = position;
-      }
+    isValid(position) {
+      return this.$refs.grid.canMoveTo(position);
     },
-    setArrowDirection(direction) {
-      while (direction < 0) {
-        direction += 4;
+    setPosition(position) {
+      this.arrow.position = position;
+    },
+    setOrientation(orientation) {
+      this.arrow.orientation = orientation;
+    },
+    applyMovement(currentPosition, currentOrientation, amount = 1) {
+      const [x, y] = currentPosition;
+      const moves = [
+        [x, y - amount], // 0 - NORTH
+        [x + amount, y], // 1 - EAST
+        [x, y + amount], // 2 - SOUTH
+        [x - amount, y], // 3 - WEST
+      ];
+      return moves[currentOrientation];
+    },
+    applyTurn(currentOrientation, direction) {
+      // orientation is 0 - NORTH, 1 - EAST, 2 - SOUTH, 3 - WEST
+      // direction is 0 - forward, 1 - right, -1 - left, 2 - backward
+      let orientation = currentOrientation + direction;
+      while (orientation < 0) {
+        orientation += 4;
       }
-      this.arrow.direction = direction % 4;
+      return orientation % 4;
+    },
+    moveForward() {
+      const { orientation, position } = this.arrow;
+      const newPosition = this.applyMovement(position, orientation);
+      this.setPosition(newPosition);
+      return this.isValid(newPosition);
+    },
+    turnRight() {
+      this.setOrientation(this.applyTurn(this.arrow.orientation, 1));
+    },
+    turnLeft() {
+      this.setOrientation(this.applyTurn(this.arrow.orientation, 1));
     },
     arrowKey(type) {
-      if (type === 'left') {
-        this.setArrowDirection(this.arrow.direction - 1);
-      } else if (type === 'right') {
-        this.setArrowDirection(this.arrow.direction + 1);
-      } else {
-        const [x, y] = this.arrow.position;
-        const moves = [
-          [x, y - 1], // 0 - NORTH
-          [x + 1, y], // 1 - EAST
-          [x, y + 1], // 2 - SOUTH
-          [x - 1, y], // 3 - WEST
-        ];
-        this.setArrowPosition(moves[this.arrow.direction]);
-      }
+      const actions = {
+        left: this.turnLeft,
+        right: this.turnRight,
+        up: this.moveForward,
+      };
+      if (actions[type]) actions[type]();
     },
   },
   watch: {
@@ -94,8 +117,8 @@ export default {
       deep: true,
       handler() {
         this.$nextTick(() => this.onResize());
-        this.arrow.position = [0, 0];
-        this.arrow.direction = 1;
+        this.setPosition([0, 0]);
+        this.setOrientation(1);
       },
     },
   },
