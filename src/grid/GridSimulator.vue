@@ -31,6 +31,10 @@ export default {
         position: [0, 0],
         orientation: 1, // 0 - NORTH, 1 - EAST, 2 - SOUTH, 3 - WEST
       },
+      defaultArrow: {
+        position: [0, 0],
+        orientation: 1,
+      },
       dimensions: {
         horizontal: 3,
         vertical: 3,
@@ -66,11 +70,17 @@ export default {
     isValid(position) {
       return this.$refs.grid.canMoveTo(position);
     },
-    setPosition(position) {
+    setPosition(position, setDefault = false) {
       this.arrow.position = position;
+      if (setDefault) this.defaultArrow.position = position;
     },
-    setOrientation(orientation) {
+    setOrientation(orientation, setDefault = false) {
       this.arrow.orientation = orientation;
+      if (setDefault) this.defaultArrow.orientation = orientation;
+    },
+    resetToDefault() {
+      this.setPosition(this.defaultArrow.position);
+      this.setOrientation(this.defaultArrow.orientation);
     },
     applyMovement(currentPosition, currentOrientation, amount = 1) {
       const [x, y] = currentPosition;
@@ -91,17 +101,18 @@ export default {
       }
       return orientation % 4;
     },
-    moveForward() {
+    moveForward(restrict = false, setDefault) {
       const { orientation, position } = this.arrow;
       const newPosition = this.applyMovement(position, orientation);
-      this.setPosition(newPosition);
-      return this.isValid(newPosition);
+      const isValid = this.isValid(newPosition);
+      if (!restrict || isValid) this.setPosition(newPosition, setDefault);
+      return isValid;
     },
-    turnRight() {
-      this.setOrientation(this.applyTurn(this.arrow.orientation, 1));
+    turnRight(restrict, setDefault) {
+      this.setOrientation(this.applyTurn(this.arrow.orientation, 1), setDefault);
     },
-    turnLeft() {
-      this.setOrientation(this.applyTurn(this.arrow.orientation, 1));
+    turnLeft(restrict, setDefault) {
+      this.setOrientation(this.applyTurn(this.arrow.orientation, -1), setDefault);
     },
     arrowKey(type) {
       const actions = {
@@ -109,7 +120,10 @@ export default {
         right: this.turnRight,
         up: this.moveForward,
       };
-      if (actions[type]) actions[type]();
+
+      if (actions[type]) {
+        actions[type](true, true);
+      }
     },
   },
   watch: {

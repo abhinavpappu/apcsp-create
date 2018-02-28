@@ -1,6 +1,6 @@
 <template>
   <div id="app">
-    <editor class="code-editor" :initial-text="code" @input="text => code = text"/>
+    <editor class="code-editor" :initial-text="rawCode" @input="text => rawCode = text"/>
     <grid-simulator class="grid-simulator" :delay="400" ref="grid-simulator"/>
     <div class="console">b</div>
   </div>
@@ -14,17 +14,34 @@ import GridSimulator from './grid/GridSimulator.vue';
 export default {
   data() {
     return {
-      code: 'IF(CAN_MOVE(forward)) {\n  MOVE_FORWARD()\n}',
+      rawCode:
+`REPEAT 3 TIMES {
+  IF (CAN_MOVE(forward)) {
+    MOVE_FORWARD()
+  }
+  ELSE {
+    ROTATE_RIGHT()
+    MOVE_FORWARD()
+    ROTATE_LEFT()
+  }
+}`,
       states: [],
       currentState: 0,
       paused: false,
       delay: 400,
     };
   },
+  computed: {
+    code() {
+      return this.addLineNumbers(this.convertSyntax(this.rawCode));
+    },
+  },
   methods: {
     addLineNumbers(code) {
       const lines = code.split('\n');
-      const commands = ['MOVE_FORWARD', 'ROTATE_RIGHT', 'ROTATE_LEFT', 'CAN_MOVE'];
+      const commands = ['DISPLAY', 'INPUT', 'RANDOM', 'INSERT', 'APPEND', 'REMOVE', 'LENGTH',
+        'MOVE_FORWARD', 'ROTATE_RIGHT', 'ROTATE_LEFT', 'CAN_MOVE'];
+
       const newLines = lines.map((line, row) => {
         let newLine = line;
 
@@ -46,28 +63,85 @@ export default {
       });
       return newLines.join('\n');
     },
+    convertSyntax(code) {
+      const replacements = {
+        '<-': '=',
+        '←': '=',
+        ' mod ': ' % ',
+        '≠': '!=',
+        '≥': '>=',
+        '≤': '<=',
+        'not ': '!',
+        ' and ': ' && ',
+        ' or ': ' || ',
+        'if\\s*\\(((.|\\s)*?)\\)\\s*{': 'if ($1) {',
+        '}\\s*else\\s*{': '} else {',
+        'while\\s*\\(((.|\\s)*?)\\)\\s*{': 'while ($_globals.continue && ($1)) {',
+        'repeat\\s+(\\d)\\s+times\\s*{': 'for (var i = 0; i < $1 && $_globals.continue; i++) {',
+        'repeat\\s+until\\s*\\(((.|\\s)*?)\\)\\s*{': 'while ($_globals.continue && !($1))',
+        'for\\s+each\\s+([a-z]\\w*)\\s+in\\s+([a-z]\\w*)\\s*{':
+          'for (var i = 0, $1 = $2[0]; i < $2.length; $1 = $2[++i])',
+        'procedure\\s+(\\w*)\\s*\\(((.|\\s)*?)\\)\\s*{': 'function $1($2) {',
+        '(\\s+)return ': '$1return ', // to uncapitalize it
+      };
+      let newCode = code;
+      Object.keys(replacements).forEach(key => {
+        newCode = newCode.replace(new RegExp(key, 'gi'), replacements[key]);
+      });
+      return newCode;
+    },
     run() {
       const $grid = this.$refs['grid-simulator'];
+      $grid.resetToDefault();
       this.states = [];
 
       let { position, orientation } = $grid.arrow;
-      const stop = [false];
+      const globals = {
+        continue: true,
+      };
 
-      const saveState = (line = 0, column = 0, length = 0) => {
-        if (!stop[0]) {
+      const saveState = (line = 0, column = 0, length = 0, text = '') => {
+        if (globals.continue) {
           this.states.push({
             position: position.slice(0),
             orientation,
             line,
             column,
             length,
+            text,
           });
           if (!$grid.isValid(position)) {
-            stop[0] = true;
+            globals.continue = false;
           }
         }
       };
       saveState();
+
+      const RANDOM = (a, b) => line => column => length => {
+        const random = Math.floor((Math.random() * ((b - a) + 1)) + a);
+        saveState(line, column, length, String(random));
+        return random;
+      };
+
+      const INSERT = (list, i, value) => line => column => length => {
+        list.splice(i, 0, value);
+        saveState(line, column, length, `[${list}]`);
+      };
+
+      const APPEND = (list, value) => line => column => length => {
+        list.push(value);
+        saveState(line, column, length, `[${list}]`);
+      };
+
+      const REMOVE = (list, i) => line => column => length => {
+        list.splice(i, 1);
+        saveState(line, column, length, `[${list}]`);
+      };
+
+      const LENGTH = list => line => column => length => {
+        saveState(line, column, length, list.length);
+        return list.length;
+      };
 
       const MOVE_FORWARD = () => line => column => length => {
         position = $grid.applyMovement(position, orientation);
@@ -91,14 +165,17 @@ export default {
         return $grid.isValid(newPosition);
       };
 
-      let { code } = this;
-      code = this.addLineNumbers(code);
-
-      safeEval(code, {
+      safeEval(this.code, {
         forward: 0,
         right: 1,
         left: -1,
         backward: 2,
+        $_globals: globals,
+        RANDOM,
+        INSERT,
+        APPEND,
+        REMOVE,
+        LENGTH,
         MOVE_FORWARD,
         ROTATE_RIGHT,
         ROTATE_LEFT,
@@ -152,6 +229,7 @@ export default {
 #app {
   font-family: 'Roboto', sans-serif;
   height: 100%;
+  overflow: hidden;
   display: grid;
   grid-template:
     "  .   .       .   .         .  " 10px

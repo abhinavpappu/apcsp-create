@@ -177,7 +177,7 @@ export default {
     },
     deleteTextAtCursor(to) {
       const deletedText = this.deleteText(this.cursor, to);
-      this.moveCursor((to < this.cursor) ? -deletedText.length : this.cursor);
+      this.moveCursor((to < this.cursor) ? -deletedText.length : 0);
     },
     backspace(amount = 1) {
       if (this.selectedText) {
