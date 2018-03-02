@@ -1,6 +1,11 @@
 <template>
   <div class="console" ref="console">
-    <div class="item" v-for="item in items"><i class="fa fa-sm fa-chevron-right"/> {{ item }}</div>
+    <div
+      class="item"
+      v-for="item in formattedItems"
+      :style="item.style">
+      <i class="fa fa-sm fa-chevron-right"/> {{ item.text }}
+    </div>
   </div>
 </template>
 
@@ -8,6 +13,22 @@
 export default {
   props: {
     items: { type: Array, required: true },
+  },
+  computed: {
+    formattedItems() {
+      return this.items.map(item => {
+        if (typeof item !== 'object') {
+          return {
+            text: String(item),
+            style: {
+              color: 'black',
+              fontSize: '1em',
+            },
+          };
+        }
+        return item;
+      });
+    },
   },
   watch: {
     items() {

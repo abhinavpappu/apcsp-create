@@ -71,7 +71,6 @@ export default {
       history: [],
       current: 0,
       lastText: this.initialText,
-      lastCursor: null,
     };
   },
   computed: {
@@ -194,7 +193,6 @@ export default {
       }
     },
     setCursor(location) {
-      this.lastCursor = this.cursor;
       this.cursor = this.constrain(location);
     },
     characterClicked({ target: $char, shiftKey }) {
@@ -237,14 +235,6 @@ export default {
       this.selectionStart = this.constrain(start);
       this.selectionEnd = this.constrain(end);
     },
-    selectPosition(positionStart, positionEnd) {
-      const [start, end] = [positionStart, positionEnd].map(this.positionToCursor);
-      this.select(start, end);
-    },
-    selectFromPosition(position, length) {
-      const start = this.positionToCursor(position);
-      this.select(start, start + length);
-    },
     addToSelection(index) {
       this.select(this.selectionStart, index);
     },
@@ -281,7 +271,8 @@ export default {
       this.deleteSelection();
     },
     specialKey(e) {
-      const { key, altKey, shiftKey } = e;
+      const { altKey, shiftKey } = e;
+      const key = e.key.toLowerCase();
       const keys = {
         c: this.copy,
         x: this.cut,
@@ -328,7 +319,7 @@ export default {
           this.current = 0;
         }
         const { start, text, type } = diff;
-        const saveText = `${this.lastCursor},${start}${type}${text}`;
+        const saveText = `${start}${type}${text}`;
         this.history.unshift(saveText);
         this.lastText = this.text;
       }
@@ -339,16 +330,17 @@ export default {
       return diff.replace(type, newType);
     },
     do(diff) {
-      // only gets the first + or - (there could be more in the user's text)
+      // only gets the first + or - (since there could be more in the user's text)
       const typeIndex = diff.search(/[+-]/);
       const type = diff[typeIndex];
       const text = diff.slice(typeIndex + 1);
-      const [cursor, start] = diff.slice(0, typeIndex).split(',').map(Number);
-      this.setCursor(cursor);
+      const start = Number(diff.slice(0, typeIndex));
       if (type === '+') {
         this.insertText(text, start, false);
+        this.setCursor(start + text.length);
       } else {
         this.deleteText(start, start + text.length, false);
+        this.setCursor(start);
       }
       this.lastText = this.text;
     },
@@ -368,13 +360,7 @@ export default {
         this.current--;
       }
     },
-  },
-  mounted() {
-    this.resetInput();
-    this.clearSelection();
-  },
-  watch: {
-    cursor() {
+    updateCursor() {
       this.$nextTick(() => {
         const $char = this.characters()[this.cursor];
         this.cursorAttributes = {
@@ -383,6 +369,18 @@ export default {
           height: $char.offsetHeight,
         };
       });
+    },
+  },
+  mounted() {
+    this.resetInput();
+    this.clearSelection();
+  },
+  watch: {
+    cursor() {
+      this.updateCursor();
+    },
+    maxSpaces() {
+      this.updateCursor();
     },
   },
   components: { TextCursor },

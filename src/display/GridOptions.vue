@@ -70,6 +70,8 @@ export default {
 
 <style lang="sass" scoped>
 .options
+  background: white
+  z-index: 2 // to overlay the arrow if it comes out of bounds
   border: black thin solid
   display: flex
   flex-direction: row
