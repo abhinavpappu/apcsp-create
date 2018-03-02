@@ -45,13 +45,12 @@ export default {
   },
   computed: {
     code() {
-      // adding line numbers first to ensure accurate highlighting when debugging
+      // adding line numbers first since convert syntax will modify them
       return this.convertSyntax(this.addLineNumbers(this.rawCode));
     },
   },
   methods: {
     addLineNumbers(code) {
-      // let lines = code.split('\n');
       const commands = ['DISPLAY', 'INPUT', 'RANDOM', 'INSERT', 'APPEND', 'REMOVE', 'LENGTH',
         'MOVE_FORWARD', 'ROTATE_RIGHT', 'ROTATE_LEFT', 'CAN_MOVE'];
 
@@ -62,18 +61,20 @@ export default {
             const start = i;
             const leftParen = code.indexOf('(', start);
 
-            // find corresponding right parentheses
-            const count = { '(': 1, ')': 0 };
-            let end = false;
-            for (let j = leftParen + 1; j < code.length && !Number.isInteger(end); j++) {
-              if (count[code[j]] !== undefined) count[code[j]]++;
-              if (count['('] === count[')']) {
-                end = j + 1;
+            if (leftParen > -1) {
+              // find corresponding right parentheses
+              const count = { '(': 1, ')': 0 };
+              let end = false;
+              for (let j = leftParen + 1; j < code.length && !Number.isInteger(end); j++) {
+                if (count[code[j]] !== undefined) count[code[j]]++;
+                if (count['('] === count[')']) {
+                  end = j + 1;
+                }
               }
-            }
 
-            modifications.push({ start, end });
-            i = leftParen; // start next search from the left parentheses (could be commands within the parentheses)
+              modifications.push({ start, end });
+              i = leftParen; // start next search from the left parentheses (could be commands within the parentheses)
+            }
           }
         });
       }
@@ -106,7 +107,7 @@ export default {
         [/\s+or\s+/gi, ' || '],
         [/if\s*\(((.|\s)*?)\)\s*{/gi, 'if ($1) {'],
         [/}\s*else\s*{/gi, '} else {'],
-        [/repeat\s+(\w+)\s+times\s*{/gi, 'for (let i = 1; i <= $1; i++) {'],
+        [/repeat([^\{}]+?)times\s*{/gi, 'for (let i = 1, num = Number($1) || 0; i <= num; i++) {'],
         [/repeat\s+until\s*\(((.|\s)*?)\)\s*{/gi, 'while (!($1))'],
         [/for\s+each\s+([a-z]\w*)\s+in\s+(.+?)\s*{/gi,
           'for (var i = 0, $1 = $2[0]; i < $2.length; $1 = $2[++i]) {'],
@@ -127,6 +128,7 @@ export default {
     },
     run() {
       const $grid = this.$refs['grid-simulator'];
+      const $editor = this.$refs.editor;
       $grid.resetToDefault();
       this.states = [];
       this.currentState = 0;
@@ -168,6 +170,13 @@ export default {
         const displayText = String(text);
         display = display.concat(displayText);
         saveState(start, end, displayText);
+      };
+
+      const INPUT = () => start => end => {
+        const { line } = $editor.cursorToPosition(start);
+        const text = prompt(`Enter value for INPUT on line ${line + 1}:`); // eslint-disable-line no-alert
+        saveState(start, end, text);
+        return text;
       };
 
       const RANDOM = (a, b) => start => end => {
@@ -220,12 +229,14 @@ export default {
       };
 
       safeEval(this.code, {
+        Number, // using it to parse input() when it should be a number
         forward: 0,
         right: 1,
         left: -1,
         backward: 2,
         $_globals: globals,
         DISPLAY,
+        INPUT,
         RANDOM,
         INSERT,
         APPEND,
