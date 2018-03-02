@@ -237,6 +237,14 @@ export default {
       this.selectionStart = this.constrain(start);
       this.selectionEnd = this.constrain(end);
     },
+    selectPosition(positionStart, positionEnd) {
+      const [start, end] = [positionStart, positionEnd].map(this.positionToCursor);
+      this.select(start, end);
+    },
+    selectFromPosition(position, length) {
+      const start = this.positionToCursor(position);
+      this.select(start, start + length);
+    },
     addToSelection(index) {
       this.select(this.selectionStart, index);
     },
