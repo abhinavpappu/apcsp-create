@@ -3,8 +3,18 @@
     <editor
       class="code-editor"
       :initial-text="rawCode"
+      :highlighted="highlighted"
       @input="text => rawCode = text"
       ref="editor"/>
+
+    <controls
+      class="controls"
+      :playing="playing"
+      @reset="reset"
+      @play="paused ? play() : run()"
+      @next="next"
+      @previous="previous"
+      @pause="paused = true"/>
 
     <grid-simulator
       class="grid-simulator"
@@ -18,6 +28,7 @@
 <script>
 import safeEval from './eval';
 import Editor from './editor/Editor.vue';
+import Controls from './Controls.vue';
 import GridSimulator from './display/GridSimulator.vue';
 import Console from './display/Console.vue';
 
@@ -38,7 +49,9 @@ export default {
       states: [],
       currentState: 0,
       endMessage: '',
-      paused: false,
+      highlighted: [],
+      playing: false,
+      paused: false, // only considered paused when user presses pause
       delay: 400,
       displayed: [],
     };
@@ -50,6 +63,28 @@ export default {
     },
   },
   methods: {
+    allIndexesOf(str, regex) {
+      const results = [];
+      let start = 0;
+      let index = str.search(regex);
+      while (index > -1) {
+        results.push(start + index);
+        start += index + 1;
+        index = str.slice(start).search(regex);
+      }
+      return results;
+    },
+    findCorresponding(str, left, char1, char2) {
+      const count = { [char1]: 1, [char2]: 0 };
+      let right = false;
+      for (let i = left + 1; i < str.length && !Number.isInteger(right); i++) {
+        if (count[str[i]] !== undefined) count[str[i]]++;
+        if (count[char1] === count[char2]) {
+          right = i + 1;
+        }
+      }
+      return right;
+    },
     addLineNumbers(code) {
       const commands = ['DISPLAY', 'INPUT', 'RANDOM', 'INSERT', 'APPEND', 'REMOVE', 'LENGTH',
         'MOVE_FORWARD', 'ROTATE_RIGHT', 'ROTATE_LEFT', 'CAN_MOVE'];
@@ -63,15 +98,7 @@ export default {
 
             if (leftParen > -1) {
               // find corresponding right parentheses
-              const count = { '(': 1, ')': 0 };
-              let end = false;
-              for (let j = leftParen + 1; j < code.length && !Number.isInteger(end); j++) {
-                if (count[code[j]] !== undefined) count[code[j]]++;
-                if (count['('] === count[')']) {
-                  end = j + 1;
-                }
-              }
-
+              const end = this.findCorresponding(code, leftParen, '(', ')');
               modifications.push({ start, end });
               i = leftParen; // start next search from the left parentheses (could be commands within the parentheses)
             }
@@ -89,30 +116,31 @@ export default {
       return newCode;
     },
     convertSyntax(code) {
+      // [regex, replacement, label?]
       // the replacements happen in order, so later replacements occur after the prior ones are applied
       // case insensitive
       /* eslint-disable no-useless-escape */
       const replacements = [
         [/<-/g, '='],
         [/←/g, '='],
-        [/(\n|;|^)\s*((var|let|const)\s+)?([a-z]\w*)\s*=\s*((.|\s)*?)(\n|;)/gi,
+        [/(;|^)\s*((var|let|const)\s+)?([a-z]\w*)\s*=\s*((.|\s)*?)(;|$)/gim, // m - ^ and $ match start/end of line
           '$1 var $4 = $5;\n'], // allow declaring variables without var/let/const
         [/\s+mod\s+/gi, ' % '],
-        [/≠/g, '!='],
+        [/≠/g, '!=='],
         [/≥/g, '>='],
         [/≤/g, '<='],
         [/(\w+)\[([^,\[\]]+)\]/g, '$1[($2) - 1]'], // subtract one from array indexing (1-indexed)
         [/not\s+/gi, '!'],
         [/\s+and\s+/gi, ' && '],
         [/\s+or\s+/gi, ' || '],
-        [/if\s*\(((.|\s)*?)\)\s*{/gi, 'if ($1) {'],
+        [/if\s*\(((.|\s)*?)\)\s*{/gi, 'if ($1) {', 'if'],
         [/}\s*else\s*{/gi, '} else {'],
         [/repeat([^\{}]+?)times\s*{/gi, 'for (let i = 1, num = Number($1) || 0; i <= num; i++) {'],
         [/repeat\s+until\s*\(((.|\s)*?)\)\s*{/gi, 'while (!($1))'],
         [/for\s+each\s+([a-z]\w*)\s+in\s+(.+?)\s*{/gi,
           'for (var i = 0, $1 = $2[0]; i < $2.length; $1 = $2[++i]) {'],
         [/procedure\s+(\w*)\s*\(((.|\s)*?)\)\s*{/gi, 'function $1($2) {'],
-        [/while\s*\(((.|\s)*?)\)\s*{/gi, 'while ($_globals.continue && ($1)) {'], // prevent infinite loops
+        [/while\s*\(((.|\s)*?)\)\s*{/gi, 'while ($_globals.continue && ($1)) {', 'while'], // prevent infinite loops
         [/for\s*\(((.|\s)*?);((.|\s)*?);((.|\s)*?)\)\s*{/gi, // prevent infinite loops
           'for ($1; $_globals.continue && ($3); $5) {'],
         [/function\s+(\w*)\s*\(((.|\s)*?)\)\s*{/gi,
@@ -120,18 +148,46 @@ export default {
         [/(\s+)return /gi, '$1return '], // to uncapitalize it if necessary
       ];
       /* eslint-enable no-useless-escape */
+
       let newCode = code;
       replacements.forEach(([regex, replacement]) => {
         newCode = newCode.replace(regex, replacement);
       });
+
+      const getReplacement = label => {
+        let result = false;
+        replacements.forEach(replacement => {
+          if (replacement[2] === label) {
+            result = replacement;
+          }
+        });
+        return result;
+      };
+
+      // replace the '=' inside if and while statements with '==='
+      ['if', 'while'].map(getReplacement).forEach(([regex]) => {
+        this.allIndexesOf(newCode, regex).forEach(index => {
+          const start = newCode.indexOf('(', index);
+          const end = this.findCorresponding(newCode, start, '(', ')');
+          const sub = newCode.slice(start + 1, end).replace(/([^=])=([^=])/, '$1===$2');
+          newCode = `${newCode.slice(0, start + 1)}${sub}${newCode.slice(end)}`;
+        });
+      });
+
       return newCode;
+    },
+    reset() {
+      this.currentState = 0;
+      this.$refs['grid-simulator'].resetToDefault();
+      this.highlighted = [];
+      this.playing = false;
+      this.paused = false;
     },
     run() {
       const $grid = this.$refs['grid-simulator'];
       const $editor = this.$refs.editor;
-      $grid.resetToDefault();
+      this.reset();
       this.states = [];
-      this.currentState = 0;
 
       let { position, orientation } = $grid.arrow;
       let display = [];
@@ -164,7 +220,6 @@ export default {
           }
         }
       };
-      saveState();
 
       const DISPLAY = text => start => end => {
         const displayText = String(text);
@@ -248,21 +303,40 @@ export default {
         CAN_MOVE,
       });
 
-      this.playStates();
+      this.play();
     },
     showState(i) {
-      const { 'grid-simulator': $grid, editor: $editor } = this.$refs;
-      this.currentState = Math.min(Math.max(0, i), this.states.length);
-      const state = this.states[i];
-      $grid.setPosition(state.position);
-      $grid.setOrientation(state.orientation);
-      $editor.select(state.start, state.end);
-      this.displayed = state.display;
-      if (i === this.states.length - 1 && this.endMessage) {
-        this.displayed.push(this.endMessage);
+      if (this.states.length === 0) {
+        this.displayed.push({
+          text: 'Run the program first (▶).',
+          style: { fontSize: '1.2em', color: 'black' },
+        });
+      } else {
+        const $grid = this.$refs['grid-simulator'];
+        this.currentState = Math.min(Math.max(0, i), this.states.length - 1);
+        const state = this.states[this.currentState];
+        $grid.setPosition(state.position);
+        $grid.setOrientation(state.orientation);
+        this.highlighted = [state.start, state.end];
+        this.displayed = state.display;
+        if (i === this.states.length - 1) {
+          this.paused = false;
+          if (this.endMessage) this.displayed.push(this.endMessage);
+        }
       }
     },
-    playStates(start = this.currentState) {
+    next() {
+      this.playing = false;
+      this.showState(this.currentState + 1);
+    },
+    previous() {
+      this.playing = false;
+      this.showState(this.currentState - 1);
+    },
+    pause() {
+      this.paused = true;
+    },
+    play(start = this.currentState) {
       // Essentially a for loop with a time delay between each iteration
       // Delay is in milliseconds
       // If using a function for delay, note that the delay is between current iteration
@@ -286,14 +360,42 @@ export default {
         }
       };
 
+      this.playing = true;
       delayedFor(start, this.states.length, 1, i => {
-        if (this.paused) return false; // ends loop
+        if (!this.playing) return false; // ends loop
         this.showState(i);
         return true;
-      }, this.delay);
+      }, this.delay, () => {
+        this.highlighted = [];
+        this.playing = false;
+      });
     },
   },
-  components: { Editor, GridSimulator, Console },
+  watch: {
+    rawCode() {
+      this.reset();
+    },
+    // possible configurations:
+    // paused, not playing
+    // not paused, playing
+    // not paused, not playing
+    paused() {
+      if (this.paused) {
+        this.playing = false;
+      }
+    },
+    playing() {
+      if (this.playing) {
+        this.paused = false;
+      }
+    },
+  },
+  components: {
+    Editor,
+    Controls,
+    GridSimulator,
+    Console,
+  },
 };
 </script>
 
@@ -307,11 +409,12 @@ export default {
   overflow: hidden;
   display: grid;
   grid-template:
-    "  .   .       .   .         .  " 10px
-    "  .   editor  .   grid-sim  .  " 6fr
-    "  .   editor  .   console   .  " 4fr
-    "  .   .       .   .         .  " 10px
-    / 10px  1fr   20px   1fr    10px;
+    "  .     .      .     .       .  " 10px
+    "  .   editor   .   grid-sim  .  " 6fr
+    "  .   editor   .   console   .  " 3fr
+    "  .   controls .   console   .  " 1fr
+    "  .     .      .     .       .  " 10px
+    / 10px  1fr    20px   1fr    10px;
 
   .code-editor {
     grid-area: editor;
@@ -321,8 +424,8 @@ export default {
     grid-area: grid-sim;
   }
 
-  .grid-options {
-    grid-area: options;
+  .controls {
+    grid-area: controls;
   }
 
   .console {

@@ -16,7 +16,8 @@ export default {
   },
   computed: {
     formattedItems() {
-      return this.items.map(item => {
+      const items = this.items.length === 0 ? [''] : this.items;
+      return items.map(item => {
         if (typeof item !== 'object') {
           return {
             text: String(item),
@@ -45,6 +46,7 @@ export default {
 .console
   padding: 10px 5px
   overflow: auto
+  border: thin black solid
 
   .item
     margin: 5px 0

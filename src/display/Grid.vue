@@ -90,7 +90,7 @@ export default {
         background-color: white
 
       &.obstacle
-        background-color: black
+        background-color: #333333
 
       &.goal
         background-color: lime

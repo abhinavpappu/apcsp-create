@@ -26,7 +26,7 @@
           <span
             v-if="character !== '\n'"
             class="char"
-            :class="{ selected: selectedChars[positionToCursor({ line: i, char: j })]} "
+            :class="getCharClass({ line: i, char: j })"
             @mousedown="characterClicked"
             @mousemove="mouseSelect"
             @mouseup="selectionAllowed = false"
@@ -53,6 +53,7 @@ export default {
   props: {
     height: { type: [Number, String], default: '100%' },
     initialText: { type: String, default: '' },
+    highlighted: { type: Array, default: () => [] },
   },
   data() {
     return {
@@ -98,8 +99,11 @@ export default {
     },
     selectedChars() {
       const [start, end] = this.selected;
-      const isSelected = (_, i) => i >= start && i < end;
-      return Array(this.text.length).fill(false).map(isSelected);
+      return Array(this.text.length).fill(false).map((_, i) => this.isInRange(i, start, end));
+    },
+    highlightedChars() {
+      const [start, end] = this.highlighted;
+      return Array(this.text.length).fill(false).map((_, i) => this.isInRange(i, start, end));
     },
   },
   methods: {
@@ -128,6 +132,16 @@ export default {
     },
     constrain(value, min = 0, max = this.text.length) {
       return Math.min(Math.max(min, value), max);
+    },
+    isInRange(value, start, end) { // start is inclusive, end is exclusive
+      return value >= start && value < end;
+    },
+    getCharClass(position) {
+      const cursor = this.positionToCursor(position);
+      return {
+        selected: this.selectedChars[cursor],
+        highlighted: this.highlightedChars[cursor],
+      };
     },
     focusInput() {
       this.$refs.input.focus();
@@ -410,5 +424,7 @@ export default {
         &.selected
           background-color: #3390FF
           color: white
+        &.highlighted
+          background-color: yellow
 
 </style>

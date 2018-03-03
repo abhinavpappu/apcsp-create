@@ -16,9 +16,9 @@
         max="20">
     </div>
     <div class="arrow-keys">
-      <div class="left" @click="arrowKey('left')"><i class="fas fa-arrow-left"/></div>
-      <div class="up" @click="arrowKey('up')"><i class="fas fa-arrow-up"/></div>
-      <div class="right" @click="arrowKey('right')"><i class="fas fa-arrow-right"/></div>
+      <div class="left" @mousedown="arrowKey('left')"><i class="fas fa-arrow-left"/></div>
+      <div class="up" @mousedown="arrowKey('up')"><i class="fas fa-arrow-up"/></div>
+      <div class="right" @mousedown="arrowKey('right')"><i class="fas fa-arrow-right"/></div>
     </div>
   </div>
 </template>
@@ -59,8 +59,10 @@ export default {
     dimensions: {
       deep: true,
       handler() {
-        if (this.dimensions.horizontal && this.dimensions.vertical) {
-          this.$emit('dimensions-changed', this.cloneDimensions(this.dimensions));
+        const { horizontal, vertical } = this.dimensions;
+        const isValid = value => value >= 1 && value <= 20;
+        if (isValid(horizontal) && isValid(vertical)) {
+          this.$emit('dimensions-changed', { horizontal, vertical });
         }
       },
     },
