@@ -1,5 +1,8 @@
 <template>
-  <div class="cursor" :style="style" :class="{'no-blink': paused, hide}"/>
+  <div
+    class="cursor"
+    :style="style"
+    :class="{'no-blink': paused, hide, transition}"/>
 </template>
 
 <script>
@@ -9,6 +12,7 @@ export default {
     left: { type: Number, required: true },
     height: { type: Number, required: true },
     hide: { type: Boolean, default: false },
+    transition: { type: Boolean, default: true },
   },
   data() {
     return {
@@ -48,7 +52,6 @@ export default {
   width: 1px
   height: 15px
   background-color: black
-  transition: left .05s, top .05s
   animation: blink 1s steps(1, end) infinite
 
   &.no-blink
@@ -56,6 +59,9 @@ export default {
 
   &.hide
     display: none
+
+  &.transition
+    transition: left .05s, top .05s
 
 @keyframes blink
   0%

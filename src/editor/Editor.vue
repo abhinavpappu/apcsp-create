@@ -2,7 +2,8 @@
   <div
     class="editor"
     tabindex="-1"
-    @focus="focusInput"
+    @focus="focus"
+    @scroll="updateCursor(true)"
     :style="{ height: Number(height) ? `${height}px` : height }"
     ref="editor">
     <textarea
@@ -16,37 +17,31 @@
       @keydown.tab.stop.prevent="insertTextAtCursor('\t')"
       @keydown.ctrl="specialKey"
       @keydown.meta="specialKey"
+      @blur="hideCursor = true"
       ref="input"/>
-    <text-cursor v-bind="cursorAttributes"/>
+    <text-cursor v-bind="cursorAttributes" :hide="hideCursor"/>
     <div class="lines">
-      <div class="line" v-for="(line, i) in lines">
+      <div class="line" v-for="(row, i) in chars">
         <span class="line-number">{{ `${spaces(i + 1)}${i + 1}` }} </span>
-
-        <template v-for="(character, j) in line">
-          <span
-            v-if="character !== '\n'"
-            class="char"
-            :class="getCharClass({ line: i, char: j })"
-            @mousedown="characterClicked"
-            @mousemove="mouseSelect"
-            @mouseup="selectionAllowed = false"
-            ref="char"
-          >{{ character }}</span>
-
-          <span
-            v-else
-            class="char grow"
-            @mousedown="characterClicked"
-            @mousemove="mouseSelect"
-            @mouseup="selectionAllowed = false"
-            ref="char"/>
-        </template>
+        <span
+          v-for="(character, j) in row"
+          class="char"
+          :class="character.classes"
+          :style="character.styles"
+          @mousedown="characterClicked"
+          @mousemove="mouseSelect"
+          @mouseup="selectionAllowed = false"
+          @dblclick="characterDoubleClicked(i, j)"
+          ref="char"
+        >{{ character.text }}</span>
       </div>
     </div>
   </div>
 </template>
 
 <script>
+import helper from '../helper';
+import highlightCode from './syntaxHighlight';
 import TextCursor from './TextCursor.vue';
 
 export default {
@@ -54,6 +49,7 @@ export default {
     height: { type: [Number, String], default: '100%' },
     initialText: { type: String, default: '' },
     highlighted: { type: Array, default: () => [] },
+    debuggingText: { type: String, default: '' },
   },
   data() {
     return {
@@ -64,7 +60,9 @@ export default {
         top: 0,
         left: 0,
         height: 0,
+        transition: true,
       },
+      hideCursor: true,
       inputValue: '  ',
       selectionStart: 0,
       selectionEnd: 0,
@@ -97,13 +95,43 @@ export default {
       const [start, end] = this.selected;
       return this.text.slice(start, end);
     },
-    selectedChars() {
-      const [start, end] = this.selected;
-      return Array(this.text.length).fill(false).map((_, i) => this.isInRange(i, start, end));
+    colors() {
+      return highlightCode(this.text);
     },
-    highlightedChars() {
-      const [start, end] = this.highlighted;
-      return Array(this.text.length).fill(false).map((_, i) => this.isInRange(i, start, end));
+    chars() {
+      return this.lines.map((line, i) => line.split('').map((char, j) => {
+        const cursor = this.positionToCursor({ line: i, char: j });
+        const isEnd = char === '\n';
+
+        let text = char;
+        const highlight = this.highlighted[0];
+        if (isEnd && highlight && this.cursorToPosition(highlight).line === i) {
+          text = ` ${this.debuggingText}`;
+        }
+
+        const classes = isEnd ? { grow: true } : {
+          selected: helper.isInRange(cursor, this.selected[0], this.selected[1]),
+          highlighted: helper.isInRange(cursor, this.highlighted[0], this.highlighted[1]),
+        };
+
+        const styles = {
+          color: 'black',
+        };
+
+        Object.keys(this.colors).forEach(color => {
+          this.colors[color].forEach(range => {
+            if (helper.isInRange(cursor, range[0], range[1])) {
+              styles.color = color;
+            }
+          });
+        });
+
+        return {
+          text,
+          classes,
+          styles,
+        };
+      }));
     },
   },
   methods: {
@@ -133,17 +161,8 @@ export default {
     constrain(value, min = 0, max = this.text.length) {
       return Math.min(Math.max(min, value), max);
     },
-    isInRange(value, start, end) { // start is inclusive, end is exclusive
-      return value >= start && value < end;
-    },
-    getCharClass(position) {
-      const cursor = this.positionToCursor(position);
-      return {
-        selected: this.selectedChars[cursor],
-        highlighted: this.highlightedChars[cursor],
-      };
-    },
-    focusInput() {
+    focus() {
+      this.hideCursor = false;
       this.$refs.input.focus();
     },
     resetInput() {
@@ -219,6 +238,21 @@ export default {
         this.clearSelection();
       }
     },
+    characterDoubleClicked(line, char) {
+      const index = this.positionToCursor({ line, char });
+      let [start, end] = Array(2).fill(index);
+      let stop = false;
+      for (let i = index; i < this.text.length && !stop; i++) {
+        end = i;
+        if (!this.text[i].match(/^\w$/)) stop = true;
+      }
+      stop = false;
+      for (let i = index; i >= 0 && !stop; i--) {
+        start = i;
+        if (!this.text[i].match(/^\w$/)) stop = true;
+      }
+      this.select(start + 1, end); // start is inclusive, end is not, so start + 1
+    },
     mouseSelect({ target: $char }) {
       if (this.selectionAllowed) {
         const index = this.characters().indexOf($char);
@@ -277,7 +311,7 @@ export default {
     copy() {
       if (this.selectedText) {
         this.copyToClipboard(this.selectedText);
-        this.focusInput();
+        this.focus();
       }
     },
     cut() {
@@ -374,14 +408,11 @@ export default {
         this.current--;
       }
     },
-    updateCursor() {
+    updateCursor(notransition = false) {
       this.$nextTick(() => {
-        const $char = this.characters()[this.cursor];
-        this.cursorAttributes = {
-          top: $char.offsetTop,
-          left: $char.offsetLeft,
-          height: $char.offsetHeight,
-        };
+        const { top, left, height } = this.characters()[this.cursor].getBoundingClientRect();
+        this.cursorAttributes = { top, left, height };
+        this.cursorAttributes.transition = !notransition;
       });
     },
   },
@@ -394,7 +425,7 @@ export default {
       this.updateCursor();
     },
     maxSpaces() {
-      this.updateCursor();
+      this.updateCursor(true);
     },
   },
   components: { TextCursor },
@@ -421,9 +452,10 @@ export default {
       .char
         &.grow
           flex-grow: 1
+          color: lightslategray !important
         &.selected
           background-color: #3390FF
-          color: white
+          color: white !important // to override syntax highlighting
         &.highlighted
           background-color: yellow
 

@@ -4,6 +4,7 @@
       class="code-editor"
       :initial-text="rawCode"
       :highlighted="highlighted"
+      :debugging-text="debuggingText"
       @input="text => rawCode = text"
       ref="editor"/>
 
@@ -26,6 +27,7 @@
 </template>
 
 <script>
+import helper from './helper';
 import safeEval from './eval';
 import Editor from './editor/Editor.vue';
 import Controls from './Controls.vue';
@@ -37,19 +39,22 @@ export default {
     return {
       rawCode:
 `REPEAT 3 TIMES {
-  IF (CAN_MOVE(forward)) {
+  REPEAT UNTIL (NOT CAN_MOVE(forward)) {
     MOVE_FORWARD()
   }
-  ELSE {
-    ROTATE_RIGHT()
-    MOVE_FORWARD()
-    ROTATE_LEFT()
-  }
-}`,
+  ROTATE_RIGHT()
+}
+
+fib = [0, 1]
+REPEAT 5 TIMES {
+  fib[LENGTH(fib) + 1] = fib[LENGTH(fib)] + fib[LENGTH(fib) - 1]
+}
+DISPLAY(fib)`,
       states: [],
       currentState: 0,
       endMessage: '',
       highlighted: [],
+      debuggingText: '',
       playing: false,
       paused: false, // only considered paused when user presses pause
       delay: 400,
@@ -63,44 +68,25 @@ export default {
     },
   },
   methods: {
-    allIndexesOf(str, regex) {
-      const results = [];
-      let start = 0;
-      let index = str.search(regex);
-      while (index > -1) {
-        results.push(start + index);
-        start += index + 1;
-        index = str.slice(start).search(regex);
-      }
-      return results;
-    },
-    findCorresponding(str, left, char1, char2) {
-      const count = { [char1]: 1, [char2]: 0 };
-      let right = false;
-      for (let i = left + 1; i < str.length && !Number.isInteger(right); i++) {
-        if (count[str[i]] !== undefined) count[str[i]]++;
-        if (count[char1] === count[char2]) {
-          right = i + 1;
-        }
-      }
-      return right;
-    },
     addLineNumbers(code) {
       const commands = ['DISPLAY', 'INPUT', 'RANDOM', 'INSERT', 'APPEND', 'REMOVE', 'LENGTH',
         'MOVE_FORWARD', 'ROTATE_RIGHT', 'ROTATE_LEFT', 'CAN_MOVE'];
 
       const modifications = [];
       for (let i = 0; i < code.length; i++) {
+        const str = code.slice(i);
         commands.forEach(command => {
-          if (code.slice(i).match(new RegExp(`^${command}\\s*\\((.|\\s)*?\\)`))) {
+          if (str.match(new RegExp(`^${command}\\s*\\((.|\\s)*?\\)`))) {
             const start = i;
             const leftParen = code.indexOf('(', start);
 
             if (leftParen > -1) {
               // find corresponding right parentheses
-              const end = this.findCorresponding(code, leftParen, '(', ')');
-              modifications.push({ start, end });
-              i = leftParen; // start next search from the left parentheses (could be commands within the parentheses)
+              const end = helper.findCorresponding(code, leftParen, '(', ')');
+              if (end) {
+                modifications.push({ start, end });
+                i = leftParen; // start next search from the left parentheses (could be commands within the parentheses)
+              }
             }
           }
         });
@@ -136,7 +122,7 @@ export default {
         [/if\s*\(((.|\s)*?)\)\s*{/gi, 'if ($1) {', 'if'],
         [/}\s*else\s*{/gi, '} else {'],
         [/repeat([^\{}]+?)times\s*{/gi, 'for (let i = 1, num = Number($1) || 0; i <= num; i++) {'],
-        [/repeat\s+until\s*\(((.|\s)*?)\)\s*{/gi, 'while (!($1))'],
+        [/repeat\s+until\s*\(((.|\s)*?)\)\s*{/gi, 'while (!($1)) {'],
         [/for\s+each\s+([a-z]\w*)\s+in\s+(.+?)\s*{/gi,
           'for (var i = 0, $1 = $2[0]; i < $2.length; $1 = $2[++i]) {'],
         [/procedure\s+(\w*)\s*\(((.|\s)*?)\)\s*{/gi, 'function $1($2) {'],
@@ -166,9 +152,9 @@ export default {
 
       // replace the '=' inside if and while statements with '==='
       ['if', 'while'].map(getReplacement).forEach(([regex]) => {
-        this.allIndexesOf(newCode, regex).forEach(index => {
+        helper.findAllIndexesOf(newCode, regex).forEach(index => {
           const start = newCode.indexOf('(', index);
-          const end = this.findCorresponding(newCode, start, '(', ')');
+          const end = helper.findCorresponding(newCode, start, '(', ')');
           const sub = newCode.slice(start + 1, end).replace(/([^=])=([^=])/, '$1===$2');
           newCode = `${newCode.slice(0, start + 1)}${sub}${newCode.slice(end)}`;
         });
@@ -220,6 +206,7 @@ export default {
           }
         }
       };
+      saveState();
 
       const DISPLAY = text => start => end => {
         const displayText = String(text);
@@ -283,27 +270,40 @@ export default {
         return isValid;
       };
 
-      safeEval(this.code, {
-        Number, // using it to parse input() when it should be a number
-        forward: 0,
-        right: 1,
-        left: -1,
-        backward: 2,
-        $_globals: globals,
-        DISPLAY,
-        INPUT,
-        RANDOM,
-        INSERT,
-        APPEND,
-        REMOVE,
-        LENGTH,
-        MOVE_FORWARD,
-        ROTATE_RIGHT,
-        ROTATE_LEFT,
-        CAN_MOVE,
-      });
+      const identity = value => start => end => {
+        saveState(start, end, String(value));
+        return value;
+      };
 
-      this.play();
+      try {
+        safeEval(this.code, {
+          Number, // using it to parse input() when it should be a number
+          forward: 0,
+          right: 1,
+          left: -1,
+          backward: 2,
+          $_globals: globals,
+          $_identity: identity,
+          DISPLAY,
+          INPUT,
+          RANDOM,
+          INSERT,
+          APPEND,
+          REMOVE,
+          LENGTH,
+          MOVE_FORWARD,
+          ROTATE_RIGHT,
+          ROTATE_LEFT,
+          CAN_MOVE,
+        });
+
+        this.play();
+      } catch (e) {
+        this.displayed.push({
+          text: `${e.name}: ${e.message}`,
+          style: { color: 'red', fontSize: '1em' },
+        });
+      }
     },
     showState(i) {
       if (this.states.length === 0) {
@@ -318,6 +318,7 @@ export default {
         $grid.setPosition(state.position);
         $grid.setOrientation(state.orientation);
         this.highlighted = [state.start, state.end];
+        this.debuggingText = state.text;
         this.displayed = state.display;
         if (i === this.states.length - 1) {
           this.paused = false;
