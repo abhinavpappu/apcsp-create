@@ -25,7 +25,7 @@ export default code => {
     ],
     darkorchid: commands.map(command => new RegExp(`${command}\\s*(?=\\()`, 'gi')),
     coral: reserved.map(val => new RegExp(`${val}(?!\\w)`, 'g')),
-    crimson: operators.map(operator => new RegExp(`(?<![a-z])\\${operator}\\s+`, 'gi')),
+    crimson: operators.map(operator => new RegExp(`\\${operator}\\s+`, 'gi')),
   };
 
   Object.keys(colors).forEach(color => {
