@@ -4,6 +4,7 @@
     tabindex="-1"
     @focus="focus"
     @scroll="updateCursor(true)"
+    @mousedown="characterClicked({target: characters().slice(-1)[0]})"
     :style="{ height: Number(height) ? `${height}px` : height }"
     ref="editor">
     <textarea
@@ -28,9 +29,8 @@
           class="char"
           :class="character.classes"
           :style="character.styles"
-          @mousedown="characterClicked"
+          @mousedown.stop="characterClicked"
           @mousemove="mouseSelect"
-          @mouseup="selectionAllowed = false"
           @dblclick="characterDoubleClicked(i, j)"
           ref="char"
         >{{ character.text }}</span>
@@ -133,6 +133,10 @@ export default {
         };
       }));
     },
+    indentation() {
+      const countSpaces = line => (line.match(/^ */) || [''])[0].length;
+      return this.lines.map(countSpaces).map(num => ' '.repeat(num));
+    },
   },
   methods: {
     setText(text) {
@@ -171,10 +175,15 @@ export default {
     },
     onTextInput() {
       const { input } = this.$refs;
-      const value = this.inputValue;
+      let value = this.inputValue;
       if (value.length >= 3 && input.selectionStart === value.length - 1) {
+        value = value.slice(1, value.length - 1);
         this.deleteSelection();
-        this.insertTextAtCursor(value.slice(1, value.length - 1));
+        if (value === '\n') { // keep indentation when adding lines
+          value += this.indentation[this.position.line];
+          if (this.text[this.cursor - 1] === '{') value += '  ';
+        }
+        this.insertTextAtCursor(value);
       } else if (value.length === 1) {
         if (input.selectionStart === 0) {
           this.backspace();
@@ -215,6 +224,7 @@ export default {
       if (this.selectedText) {
         this.deleteSelection();
       } else {
+        if (this.text.substr(this.cursor - 2, 2) === '  ' && amount === 1) amount = 2; // delete tab
         this.deleteTextAtCursor(this.cursor - amount);
       }
     },
@@ -415,10 +425,19 @@ export default {
         this.cursorAttributes.transition = !notransition;
       });
     },
+    mouseUp() {
+      this.selectionAllowed = false;
+    },
+  },
+  created() {
+    window.addEventListener('mouseup', this.mouseUp);
   },
   mounted() {
     this.resetInput();
     this.clearSelection();
+  },
+  destroyed() {
+    window.removeEventListener('mouseup', this.mouseUp);
   },
   watch: {
     cursor() {

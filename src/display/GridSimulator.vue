@@ -70,6 +70,9 @@ export default {
     isValid(position) {
       return this.$refs.grid.canMoveTo(position);
     },
+    isGoal(position) {
+      return this.$refs.grid.isGoal(position);
+    },
     setPosition(position, setDefault = false) {
       this.arrow.position = position;
       if (setDefault) this.defaultArrow.position = position;
@@ -131,8 +134,8 @@ export default {
       deep: true,
       handler() {
         this.$nextTick(() => this.onResize());
-        this.setPosition([0, 0]);
-        this.setOrientation(1);
+        this.setPosition([0, 0], true);
+        this.setOrientation(1, true);
       },
     },
   },
@@ -154,6 +157,7 @@ export default {
   position: relative
   display: flex
   flex-direction: column
+  outline: none
 
   .grid
     flex-grow: 5

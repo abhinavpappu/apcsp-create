@@ -57,6 +57,7 @@ export default {
   height: 100%
   border: thin black solid
   outline: none
+  background-color: white
 
   .control
     border: thin black solid

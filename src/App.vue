@@ -23,6 +23,9 @@
       ref="grid-simulator"/>
 
     <console :items="displayed"/>
+
+    <div class="a"/>
+    <div class="b"/>
   </div>
 </template>
 
@@ -44,12 +47,7 @@ export default {
   }
   ROTATE_RIGHT()
 }
-
-fib = [0, 1]
-REPEAT 5 TIMES {
-  fib[LENGTH(fib) + 1] = fib[LENGTH(fib)] + fib[LENGTH(fib) - 1]
-}
-DISPLAY(fib)`,
+`,
       states: [],
       currentState: 0,
       endMessage: '',
@@ -76,7 +74,7 @@ DISPLAY(fib)`,
       for (let i = 0; i < code.length; i++) {
         const str = code.slice(i);
         commands.forEach(command => {
-          if (str.match(new RegExp(`^${command}\\s*\\((.|\\s)*?\\)`))) {
+          if (str.match(new RegExp(`^${command}\\s*\\((.|\\s)*?\\)`, 'i'))) {
             const start = i;
             const leftParen = code.indexOf('(', start);
 
@@ -84,7 +82,7 @@ DISPLAY(fib)`,
               // find corresponding right parentheses
               const end = helper.findCorresponding(code, leftParen, '(', ')');
               if (end) {
-                modifications.push({ start, end });
+                modifications.push({ start, end, leftParen });
                 i = leftParen; // start next search from the left parentheses (could be commands within the parentheses)
               }
             }
@@ -95,8 +93,12 @@ DISPLAY(fib)`,
       let newCode = code;
       // reverse sort by end values so that each modification doesn't affect the next one (modifies index)
       modifications.sort(({ end: e1 }, { end: e2 }) => e2 - e1).forEach(modification => {
-        const { start, end } = modification;
-        newCode = `${newCode.slice(0, end)}(${start})(${end})${newCode.slice(end)}`;
+        const { start, end, leftParen } = modification;
+        const before = newCode.slice(0, start);
+        const command = newCode.slice(start, leftParen).toUpperCase(); // so that lower case commands work
+        const parentheses = newCode.slice(leftParen, end);
+        const after = newCode.slice(end);
+        newCode = `${before}${command}${parentheses}(${start})(${end})${after}`;
       });
 
       return newCode;
@@ -120,8 +122,8 @@ DISPLAY(fib)`,
         [/\s+and\s+/gi, ' && '],
         [/\s+or\s+/gi, ' || '],
         [/if\s*\(((.|\s)*?)\)\s*{/gi, 'if ($1) {', 'if'],
-        [/}\s*else\s*{/gi, '} else {'],
-        [/repeat([^\{}]+?)times\s*{/gi, 'for (let i = 1, num = Number($1) || 0; i <= num; i++) {'],
+        [/}\s*else(\s*{|\s+if)/gi, '} else $1'],
+        [/repeat([^\{}]+?)times\s*{/gi, 'for (let i = 1, $_num = Number($1) || 0; i <= $_num; i++) {'],
         [/repeat\s+until\s*\(((.|\s)*?)\)\s*{/gi, 'while (!($1)) {'],
         [/for\s+each\s+([a-z]\w*)\s+in\s+(.+?)\s*{/gi,
           'for (var i = 0, $1 = $2[0]; i < $2.length; $1 = $2[++i]) {'],
@@ -174,6 +176,7 @@ DISPLAY(fib)`,
       const $editor = this.$refs.editor;
       this.reset();
       this.states = [];
+      this.endMessage = '';
 
       let { position, orientation } = $grid.arrow;
       let display = [];
@@ -247,19 +250,19 @@ DISPLAY(fib)`,
         return list.length;
       };
 
-      const MOVE_FORWARD = () => start => end => {
-        position = $grid.applyMovement(position, orientation);
-        saveState(start, end);
+      const MOVE_FORWARD = (numTimes = 1) => start => end => {
+        position = $grid.applyMovement(position, orientation, numTimes);
+        saveState(start, end, String(numTimes));
       };
 
-      const ROTATE_RIGHT = () => start => end => {
-        orientation = $grid.applyTurn(orientation, 1);
-        saveState(start, end);
+      const ROTATE_RIGHT = (numTimes = 1) => start => end => {
+        orientation = $grid.applyTurn(orientation, 1, numTimes);
+        saveState(start, end, String(numTimes));
       };
 
-      const ROTATE_LEFT = () => start => end => {
-        orientation = $grid.applyTurn(orientation, -1);
-        saveState(start, end);
+      const ROTATE_LEFT = (numTimes = 1) => start => end => {
+        orientation = $grid.applyTurn(orientation, -1, numTimes);
+        saveState(start, end, String(numTimes));
       };
 
       const CAN_MOVE = direction => start => end => {
@@ -322,7 +325,14 @@ DISPLAY(fib)`,
         this.displayed = state.display;
         if (i === this.states.length - 1) {
           this.paused = false;
-          if (this.endMessage) this.displayed.push(this.endMessage);
+          if (this.endMessage) {
+            this.displayed.push(this.endMessage);
+          } else if ($grid.isGoal(state.position)) {
+            this.displayed.push({
+              text: 'SUCCESS',
+              style: { color: 'green', fontSize: '3em' },
+            });
+          }
         }
       }
     },
@@ -411,10 +421,10 @@ DISPLAY(fib)`,
   display: grid;
   grid-template:
     "  .     .      .     .       .  " 10px
-    "  .   editor   .   grid-sim  .  " 6fr
-    "  .   editor   .   console   .  " 3fr
+    "  .   editor   a   grid-sim  .  " 6fr
+    "  .   editor   a   console   .  " 3fr
     "  .   controls .   console   .  " 1fr
-    "  .     .      .     .       .  " 10px
+    "  .     b      .     .       .  " 10px
     / 10px  1fr    20px   1fr    10px;
 
   .code-editor {
@@ -427,10 +437,24 @@ DISPLAY(fib)`,
 
   .controls {
     grid-area: controls;
+    z-index: 2;
   }
 
   .console {
     grid-area: console;
+  }
+
+  .a {
+    grid-area: a;
+  }
+
+  .b {
+    grid-area: b;
+  }
+
+  .a, .b { // blank fillers to overlap the editor's cursor if it goes out of bounds
+    background: white;
+    z-index: 1;
   }
 }
 

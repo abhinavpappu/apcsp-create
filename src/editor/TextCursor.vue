@@ -2,7 +2,8 @@
   <div
     class="cursor"
     :style="style"
-    :class="{'no-blink': paused, hide, transition}"/>
+    :class="{'no-blink': paused, hide, transition}"
+    @mousedown="$event.stopPropagation()"/>
 </template>
 
 <script>
@@ -52,6 +53,7 @@ export default {
   width: 1px
   height: 15px
   background-color: black
+  z-index: -1
   animation: blink 1s steps(1, end) infinite
 
   &.no-blink

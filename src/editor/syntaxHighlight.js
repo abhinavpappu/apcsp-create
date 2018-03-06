@@ -9,7 +9,8 @@ export default code => {
   const commands = ['DISPLAY', 'INPUT', 'RANDOM', 'INSERT', 'APPEND', 'REMOVE', 'LENGTH',
     'MOVE_FORWARD', 'ROTATE_RIGHT', 'ROTATE_LEFT', 'CAN_MOVE'];
   const reserved = ['forward', 'right', 'left', 'backward'];
-  const operators = ['+', '-', '*', '/', 'MOD', '%', '=', '≠', '>', '<', '≥', '≤', 'NOT', '!'];
+  const operators = ['+', '-', '*', '/', 'MOD', '%', '=', '≠', '>', '<', '≥', '≤', 'NOT', '!',
+    'AND', 'OR'];
 
   const colors = {
     mediumblue: [
@@ -20,10 +21,11 @@ export default code => {
       /repeat\s+until\s*(?=\()/gi,
       /for\s+each\s+/gi,
       /\sin\s+/gi,
+      /procedure\s+/gi,
     ],
     darkorchid: commands.map(command => new RegExp(`${command}\\s*(?=\\()`, 'gi')),
-    coral: reserved.map(val => new RegExp(`${val}`, 'g')),
-    crimson: operators.map(operator => new RegExp(`\\${operator}\\s+`, 'gi')),
+    coral: reserved.map(val => new RegExp(`(?<!\\w)${val}(?!\\w)`, 'g')),
+    crimson: operators.map(operator => new RegExp(`(?<![a-z])\\${operator}\\s+`, 'gi')),
   };
 
   Object.keys(colors).forEach(color => {

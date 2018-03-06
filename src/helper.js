@@ -23,7 +23,7 @@ const helper = {
     for (let i = left + 1; i < str.length && !Number.isInteger(right); i++) {
       if (count[str[i]] !== undefined) count[str[i]]++;
       if (count[char1] === count[char2]) {
-        right = i + 1;
+        right = i + 1; // the character after corresponding char2 (so that str.slice(left, right) includes both characters)
       }
     }
     return right;

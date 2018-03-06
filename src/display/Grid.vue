@@ -58,6 +58,9 @@ export default {
       }
       return true;
     },
+    isGoal([x, y]) {
+      return this.squareTypes[this.grid[y][x]] === 'goal';
+    },
   },
   watch: {
     dimensions: {
