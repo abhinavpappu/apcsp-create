@@ -179,9 +179,13 @@ export default {
       if (value.length >= 3 && input.selectionStart === value.length - 1) {
         value = value.slice(1, value.length - 1);
         this.deleteSelection();
+        const { line, char } = this.position;
         if (value === '\n') { // keep indentation when adding lines
-          value += this.indentation[this.position.line];
-          if (this.text[this.cursor - 1] === '{') value += '  ';
+          value += this.indentation[line];
+          if (this.text[this.cursor - 1] === '{') value += '  '; // extra indent if {
+        }
+        if (value === '}' && this.lines[line].slice(0, char).match(/^  +$/)) { // dedent if }
+          this.deleteTextAtCursor(this.cursor - 2);
         }
         this.insertTextAtCursor(value);
       } else if (value.length === 1) {

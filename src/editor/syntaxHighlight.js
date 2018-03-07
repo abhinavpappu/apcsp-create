@@ -13,26 +13,27 @@ export default code => {
     'AND', 'OR'];
 
   const colors = {
+    // [regex, start offset]
     mediumblue: [
-      /if\s*(?=\()/gi,
-      /else\s*/gi,
-      /repeat\s+(?!=until)/gi,
-      /\stimes\s*(?={)/gi,
-      /repeat\s+until\s*(?=\()/gi,
-      /for\s+each\s+/gi,
-      /\sin\s+/gi,
-      /procedure\s+/gi,
+      [/if\s*(?=\()/gi, 0],
+      [/}\s*else\s*/gi, 1],
+      [/repeat\s+(?!=until)/gi, 0],
+      [/\stimes\s*(?={)/gi, 1],
+      [/repeat\s+until\s*(?=\()/gi, 0],
+      [/for\s+each\s+/gi, 0],
+      [/\sin\s+/gi, 1],
+      [/procedure\s+/gi, 0],
     ],
-    darkorchid: commands.map(command => new RegExp(`${command}\\s*(?=\\()`, 'gi')),
-    coral: reserved.map(val => new RegExp(`${val}(?!\\w)`, 'g')),
-    crimson: operators.map(operator => new RegExp(`\\${operator}\\s+`, 'gi')),
+    darkorchid: commands.map(command => [new RegExp(`${command}\\s*(?=\\()`, 'gi'), 0]),
+    coral: reserved.map(val => [new RegExp(`\\W${val}(?!\\w)`, 'g'), 1]),
+    crimson: operators.map(operator => [new RegExp(`\\W\\${operator}\\s+`, 'gi'), 1]),
   };
 
   Object.keys(colors).forEach(color => {
     colors[color].forEach(statement => {
-      const matches = code.match(statement);
-      const indexes = helper.findAllIndexesOf(code, statement);
-      const ranges = indexes.map((index, i) => [index, index + matches[i].length]);
+      const matches = code.match(statement[0]);
+      const indexes = helper.findAllIndexesOf(code, statement[0]);
+      const ranges = indexes.map((index, i) => [index + statement[1], index + matches[i].length]);
       addColor(color, ranges);
     });
   });

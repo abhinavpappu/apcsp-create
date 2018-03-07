@@ -5,9 +5,9 @@
         class="square"
         :class="[squareTypes[square]]"
         v-for="(square, j) in row"
-        @click="toggleSquareType(i, j)"
         @mousedown.prevent.stop="isMouseDown = getToggleType(i, j)"
-        @mousemove.prevent.stop="setSquareType(i, j, squareTypes.indexOf(isMouseDown))"/>
+        @mousemove.prevent.stop="setSquareType(i, j, squareTypes.indexOf(isMouseDown))"
+        @mouseup.prevent.stop="setSquareType(i, j, squareTypes.indexOf(isMouseDown))"/>
     </div>
   </div>
 </template>
