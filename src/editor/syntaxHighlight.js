@@ -8,7 +8,7 @@ export default code => {
 
   const commands = ['DISPLAY', 'INPUT', 'RANDOM', 'INSERT', 'APPEND', 'REMOVE', 'LENGTH',
     'MOVE_FORWARD', 'ROTATE_RIGHT', 'ROTATE_LEFT', 'CAN_MOVE'];
-  const reserved = ['forward', 'right', 'left', 'backward'];
+  const reserved = ['forward', 'right', 'left', 'backward', 'true', 'false'];
   const operators = ['+', '-', '*', '/', 'MOD', '%', '=', '≠', '>', '<', '≥', '≤', 'NOT', '!',
     'AND', 'OR'];
 
@@ -23,6 +23,7 @@ export default code => {
       [/for\s+each\s+/gi, 0],
       [/\sin\s+/gi, 1],
       [/procedure\s+/gi, 0],
+      [/while\s*(?=\()/gi, 0],
     ],
     darkorchid: commands.map(command => [new RegExp(`${command}\\s*(?=\\()`, 'gi'), 0]),
     coral: reserved.map(val => [new RegExp(`\\W${val}(?!\\w)`, 'g'), 1]),

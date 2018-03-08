@@ -123,7 +123,7 @@ export default {
         [/\s+or\s+/gi, ' || '],
         [/if\s*\(((.|\s)*?)\)\s*{/gi, 'if ($1) {', 'if'],
         [/}\s*else(\s*{|\s+if)/gi, '} else $1'],
-        [/repeat([^\{}]+?)times\s*{/gi, 'for (let i = 1, $_num = Number($1) || 0; i <= $_num; i++) {'],
+        [/repeat([^\{}]+?)times\s*{/gi, 'for (let i = 1, $_num = $_number($1) || 0; i <= $_num; i++) {'],
         [/repeat\s+until\s*\(((.|\s)*?)\)\s*{/gi, 'while (!($1)) {'],
         [/for\s+each\s+([a-z]\w*)\s+in\s+(.+?)\s*{/gi,
           'for (var i = 0, $1 = $2[0]; i < $2.length; $1 = $2[++i]) {'],
@@ -280,7 +280,7 @@ export default {
 
       try {
         safeEval(this.code, {
-          Number, // using it to parse input() when it should be a number
+          $_number: Number, // using it to parse input() when it should be a number
           forward: 0,
           right: 1,
           left: -1,

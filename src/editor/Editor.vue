@@ -23,7 +23,11 @@
     <text-cursor v-bind="cursorAttributes" :hide="hideCursor"/>
     <div class="lines">
       <div class="line" v-for="(row, i) in chars">
-        <span class="line-number">{{ `${spaces(i + 1)}${i + 1}` }} </span>
+        <span
+          class="line-number"
+          @mousedown.stop="characterClicked({target: characters()[positionToCursor({ line: i, char: 0 })]})"
+        >{{ `${spaces(i + 1)}${i + 1}` }}&nbsp;</span>
+
         <span
           v-for="(character, j) in row"
           class="char"
