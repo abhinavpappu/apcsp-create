@@ -7,7 +7,7 @@
         v-for="(square, j) in row"
         @mousedown.prevent.stop="isMouseDown = getToggleType(i, j)"
         @mousemove.prevent.stop="setSquareType(i, j, squareTypes.indexOf(isMouseDown))"
-        @mouseup.prevent.stop="setSquareType(i, j, squareTypes.indexOf(isMouseDown))"/>
+        @mouseup.prevent="setSquareType(i, j, squareTypes.indexOf(isMouseDown))"/>
     </div>
   </div>
 </template>
