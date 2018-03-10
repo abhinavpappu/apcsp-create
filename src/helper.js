@@ -41,7 +41,7 @@ const helper = {
     return indexes.map(index => [index, helper.findCorresponding(str, index, char1, char2)]);
   },
   isWithin(str, position, char1, char2) {
-    const ranges = helper.allRanges(str, char1, char2);
+    const ranges = helper.findAllRanges(str, char1, char2);
     let isWithin = false;
     ranges.forEach(range => {
       if (helper.isInRange(position, range[0] + 1, range[1])) {

@@ -35,6 +35,11 @@ export default code => {
       const matches = code.match(statement[0]);
       const indexes = helper.findAllIndexesOf(code, statement[0]);
       const ranges = indexes.map((index, i) => [index + statement[1], index + matches[i].length]);
+      for (let i = ranges.length - 1; i >= 0; i--) {
+        if (helper.isWithin(code, ranges[i][0], "'", "'")) {
+          ranges.splice(i, 1);
+        }
+      }
       addColor(color, ranges);
     });
   });
