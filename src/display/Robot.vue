@@ -1,10 +1,10 @@
 <template>
-  <svg class="arrow" :style="arrowStyle" viewBox="0 0 100 100">
+  <svg class="robot" :style="robotStyle" viewBox="0 0 100 100">
     <polygon
-      class="triangle"
+      class="arrow"
       points="15 15, 85 50, 15 85"
-      :style="triangleStyle"
-      ref="triangle"/>
+      :style="arrowStyle"
+      ref="arrow"/>
   </svg>
 </template>
 
@@ -19,7 +19,7 @@ export default {
     animationDuration: { type: Number, default: 400 },
   },
   computed: {
-    arrowStyle() {
+    robotStyle() {
       const addPx = style => `${style}px`;
       const duration = `${this.animationDuration / 1000}s`;
 
@@ -31,7 +31,7 @@ export default {
         transition: `top ${duration}, left ${duration}`,
       };
     },
-    triangleStyle() {
+    arrowStyle() {
       const mod = divisor => dividend => {
         while (dividend < 0) {
           dividend += divisor;
@@ -42,8 +42,8 @@ export default {
 
       // The following is to make sure that when turning, the shortest path is taken
       // (to make sure it doesn't turn -270deg instead of 90deg)
-      const $triangle = this.$refs.triangle;
-      const current = $triangle ? $triangle.style.transform : 'rotate(0deg)';
+      const $arrow = this.$refs.arrow;
+      const current = $arrow ? $arrow.style.transform : 'rotate(0deg)';
       const rotation = Number(current.substring(current.indexOf('(') + 1, current.indexOf('deg')));
       let newRotation = this.orientation;
       if (mod360(rotation + 90) === mod360(this.orientation)) { // turn right
@@ -65,11 +65,11 @@ export default {
 </script>
 
 <style lang="sass" scoped>
-.arrow
+.robot
   position: absolute
   z-index: 1
 
-  .triangle
+  .arrow
     transform-origin: center center
 
 </style>

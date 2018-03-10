@@ -1,5 +1,5 @@
 <template>
-  <div class="grid" @mouseup.prevent.stop="isMouseDown = false">
+  <div class="grid">
     <div class="row" v-for="(row, i) in grid">
       <div
         class="square"
@@ -61,6 +61,15 @@ export default {
     isGoal([x, y]) {
       return this.squareTypes[this.grid[y][x]] === 'goal';
     },
+    mouseUp() {
+      this.isMouseDown = false;
+    },
+  },
+  created() {
+    window.addEventListener('mouseup', this.mouseUp);
+  },
+  destroyed() {
+    window.removeEventListener('mouseup', this.mouseUp);
   },
   watch: {
     dimensions: {

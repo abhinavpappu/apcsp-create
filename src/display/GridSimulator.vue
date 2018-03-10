@@ -1,6 +1,6 @@
 <template>
   <div class="container" tabindex="-1">
-    <arrow v-bind="arrowProps"/>
+    <robot v-bind="robotProps"/>
     <grid
       :dimensions="dimensions"
       class="grid"
@@ -15,7 +15,7 @@
 </template>
 
 <script>
-import Arrow from './Arrow.vue';
+import Robot from './Robot.vue';
 import Grid from './Grid.vue';
 import GridOptions from './GridOptions.vue';
 
@@ -25,13 +25,13 @@ export default {
   },
   data() {
     return {
-      arrow: {
+      robot: {
         width: 0,
         height: 0,
         position: [0, 0],
         orientation: 1, // 0 - NORTH, 1 - EAST, 2 - SOUTH, 3 - WEST
       },
-      defaultArrow: {
+      defaultRobot: {
         position: [0, 0],
         orientation: 1,
       },
@@ -42,14 +42,14 @@ export default {
     };
   },
   computed: {
-    arrowProps() {
-      const [x, y] = this.arrow.position;
+    robotProps() {
+      const [x, y] = this.robot.position;
       return {
-        width: this.arrow.width,
-        height: this.arrow.height,
+        width: this.robot.width,
+        height: this.robot.height,
         left: this.getSquareWidth() * x,
         top: this.getSquareHeight() * y,
-        orientation: [-90, 0, 90, 180][this.arrow.orientation],
+        orientation: [-90, 0, 90, 180][this.robot.orientation],
         animationDuration: this.delay,
       };
     },
@@ -64,8 +64,8 @@ export default {
       return $grid ? $grid.getSquareHeight() : 0;
     },
     onResize() {
-      this.arrow.width = this.getSquareWidth();
-      this.arrow.height = this.getSquareHeight();
+      this.robot.width = this.getSquareWidth();
+      this.robot.height = this.getSquareHeight();
     },
     isValid(position) {
       return this.$refs.grid.canMoveTo(position);
@@ -74,16 +74,16 @@ export default {
       return this.$refs.grid.isGoal(position);
     },
     setPosition(position, setDefault = false) {
-      this.arrow.position = position;
-      if (setDefault) this.defaultArrow.position = position;
+      this.robot.position = position;
+      if (setDefault) this.defaultRobot.position = position;
     },
     setOrientation(orientation, setDefault = false) {
-      this.arrow.orientation = orientation;
-      if (setDefault) this.defaultArrow.orientation = orientation;
+      this.robot.orientation = orientation;
+      if (setDefault) this.defaultRobot.orientation = orientation;
     },
     resetToDefault() {
-      this.setPosition(this.defaultArrow.position);
-      this.setOrientation(this.defaultArrow.orientation);
+      this.setPosition(this.defaultRobot.position);
+      this.setOrientation(this.defaultRobot.orientation);
     },
     applyMovement(currentPosition, currentOrientation, amount = 1) {
       const [x, y] = currentPosition;
@@ -105,17 +105,17 @@ export default {
       return orientation % 4;
     },
     moveForward(restrict = false, setDefault) {
-      const { orientation, position } = this.arrow;
+      const { orientation, position } = this.robot;
       const newPosition = this.applyMovement(position, orientation);
       const isValid = this.isValid(newPosition);
       if (!restrict || isValid) this.setPosition(newPosition, setDefault);
       return isValid;
     },
     turnRight(restrict, setDefault) {
-      this.setOrientation(this.applyTurn(this.arrow.orientation, 1), setDefault);
+      this.setOrientation(this.applyTurn(this.robot.orientation, 1), setDefault);
     },
     turnLeft(restrict, setDefault) {
-      this.setOrientation(this.applyTurn(this.arrow.orientation, -1), setDefault);
+      this.setOrientation(this.applyTurn(this.robot.orientation, -1), setDefault);
     },
     arrowKey(type) {
       const actions = {
@@ -148,7 +148,7 @@ export default {
   destroyed() {
     window.removeEventListener('resize', this.onResize);
   },
-  components: { Arrow, Grid, GridOptions },
+  components: { Robot, Grid, GridOptions },
 };
 </script>
 

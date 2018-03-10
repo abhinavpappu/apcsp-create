@@ -178,7 +178,7 @@ export default {
       this.states = [];
       this.endMessage = '';
 
-      let { position, orientation } = $grid.arrow;
+      let { position, orientation } = $grid.robot;
       let display = [];
       const globals = {
         continue: true,
