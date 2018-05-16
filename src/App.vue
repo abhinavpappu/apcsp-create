@@ -170,6 +170,7 @@ export default {
       this.highlighted = [];
       this.playing = false;
       this.paused = false;
+      this.displayed = [];
     },
     run() {
       const $grid = this.$refs['grid-simulator'];

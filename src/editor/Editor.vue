@@ -20,7 +20,11 @@
       @keydown.meta="specialKey"
       @blur="hideCursor = true"
       ref="input"/>
+
     <text-cursor v-bind="cursorAttributes" :hide="hideCursor"/>
+
+    <auto-complete v-bind="autocomplete"/>
+
     <div class="lines">
       <div class="line" v-for="(row, i) in chars">
         <span
@@ -47,6 +51,7 @@
 import helper from '../helper';
 import highlightCode from './syntaxHighlight';
 import TextCursor from './TextCursor.vue';
+import AutoComplete from './AutoComplete.vue';
 
 export default {
   props: {
@@ -74,6 +79,12 @@ export default {
       history: [],
       current: 0,
       lastText: this.initialText,
+      autocomplete: {
+        show: false,
+        left: 0,
+        top: 0,
+        start: '',
+      },
     };
   },
   computed: {
@@ -200,6 +211,21 @@ export default {
         }
       }
       this.resetInput();
+
+      let position = this.cursor - 1;
+      let start = '';
+      while (position >= 0 && this.text[position].match(/^[a-z]$/i)) {
+        start = this.text[position] + start;
+        position--;
+      }
+      const { left, top, height } = this.cursorAttributes;
+      this.autocomplete = {
+        show: true,
+        left,
+        top: top + height,
+        start,
+      };
+      console.log(start);
     },
     insertText(text, location, save = true) {
       let newText = text;
@@ -455,7 +481,7 @@ export default {
       this.updateCursor(true);
     },
   },
-  components: { TextCursor },
+  components: { TextCursor, AutoComplete },
 };
 </script>
 

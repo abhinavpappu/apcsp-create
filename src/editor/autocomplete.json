@@ -1,0 +1,42 @@
+{
+  "DISPLAY": {
+    "template": "DISPLAY(expression)",
+    "description": "Displays the value of expression, followed by a new line.",
+    "variables": ["expression"],
+    "select": "expression"
+  },
+  "INPUT": {
+    "template": "INPUT()",
+    "description": "Accepts a value from the user and returns it."
+  },
+  "MOD": {
+    "template": "a MOD b",
+    "description": "Evaluates to the remainder when a is divided by b",
+    "variables": ["a", "b"],
+    "select": "b"
+  },
+  "RANDOM": {
+    "template": "RANDOM(a, b)",
+    "description": "Evaluates to a random integer from a to b, including a and b. For example, RANDOM (1, 3) could evaluate to 1, 2, or 3.",
+    "variables": ["a", "b"],
+    "select": "a, b"
+  },
+  "NOT": {
+    "template": "NOT condition",
+    "description": "Evaluates to true if condition is false; otherwise evaluates to false.",
+    "variables": ["condition"],
+    "select": "condition"
+  },
+  "AND": {
+    "template": "condition1 AND condition2",
+    "description": "Evaluates to true if both condition1 and condition2 are true; otherwise, evaluates to false.",
+    "variables": ["condition1", "condition2"],
+    "select": "condition2"
+  },
+  "OR": {
+    "template": "condition1 OR condition2",
+    "description": "Evaluates to true if condition1 is true or if condition2 is true or if both condition1 and condition2 are true; otherwise, evaluates to false.",
+    "variables": ["condition1", "condition2"],
+    "select": "condition2"
+  }
+}

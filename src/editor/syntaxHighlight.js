@@ -9,8 +9,8 @@ export default code => {
   const commands = ['DISPLAY', 'INPUT', 'RANDOM', 'INSERT', 'APPEND', 'REMOVE', 'LENGTH',
     'MOVE_FORWARD', 'ROTATE_RIGHT', 'ROTATE_LEFT', 'CAN_MOVE'];
   const reserved = ['forward', 'right', 'left', 'backward', 'true', 'false'];
-  const operators = ['+', '-', '*', '/', 'MOD', '%', '=', '≠', '>', '<', '≥', '≤', 'NOT', '!',
-    'AND', 'OR'];
+  const operators = ['+', '-', '*', '/', 'MOD', '%', '<-', '=', '≠', '>', '<', '≥', '≤',
+    'NOT', '!', 'AND', 'OR'];
 
   const colors = {
     // [regex, start offset]
@@ -24,6 +24,7 @@ export default code => {
       [/\sin\s+/gi, 1],
       [/procedure\s+/gi, 0],
       [/while\s*(?=\()/gi, 0],
+      [/(\s|;)return/gi, 1],
     ],
     darkorchid: commands.map(command => [new RegExp(`${command}\\s*(?=\\()`, 'gi'), 0]),
     coral: reserved.map(val => [new RegExp(`\\W${val}(?!\\w)`, 'g'), 1]),
