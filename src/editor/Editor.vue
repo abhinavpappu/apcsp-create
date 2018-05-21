@@ -23,7 +23,7 @@
 
     <text-cursor v-bind="cursorAttributes" :hide="hideCursor"/>
 
-    <auto-complete v-bind="autocomplete"/>
+    <auto-complete v-bind="autocomplete" :show.sync="autocompleteVisible" v-model="autocompleteSelection"/>
 
     <div class="lines">
       <div class="line" v-for="(row, i) in chars">
@@ -72,6 +72,7 @@ export default {
         transition: true,
       },
       hideCursor: true,
+      cursorCallback: false,
       inputValue: '  ',
       selectionStart: 0,
       selectionEnd: 0,
@@ -79,12 +80,14 @@ export default {
       history: [],
       current: 0,
       lastText: this.initialText,
+      autocompleteVisible: false,
       autocomplete: {
-        show: false,
-        left: 0,
-        top: 0,
+        x: 0,
+        y: 0,
         start: '',
+        selected: 0,
       },
+      autocompleteSelection: {},
     };
   },
   computed: {
@@ -195,9 +198,15 @@ export default {
         value = value.slice(1, value.length - 1);
         this.deleteSelection();
         const { line, char } = this.position;
-        if (value === '\n') { // keep indentation when adding lines
-          value += this.indentation[line];
-          if (this.text[this.cursor - 1] === '{') value += '  '; // extra indent if {
+        if (value === '\n') {
+          if (this.autocompleteVisible) { // if autocomplete visible, pressing enter will select suggestion instead
+            this.autocompleteStatement();
+            value = '';
+          } else {
+            // keep indentation when adding lines
+            value += this.indentation[line];
+            if (this.text[this.cursor - 1] === '{') value += '  '; // extra indent if {
+          }
         }
         if (value === '}' && this.lines[line].slice(0, char).match(/^  +$/)) { // dedent if }
           this.deleteTextAtCursor(this.cursor - 2);
@@ -212,20 +221,7 @@ export default {
       }
       this.resetInput();
 
-      let position = this.cursor - 1;
-      let start = '';
-      while (position >= 0 && this.text[position].match(/^[a-z]$/i)) {
-        start = this.text[position] + start;
-        position--;
-      }
-      const { left, top, height } = this.cursorAttributes;
-      this.autocomplete = {
-        show: true,
-        left,
-        top: top + height,
-        start,
-      };
-      console.log(start);
+      this.onCursorUpdate(this.updateAutocomplete);
     },
     insertText(text, location, save = true) {
       let newText = text;
@@ -314,13 +310,17 @@ export default {
       }
     },
     moveLine(amount, shift) {
-      const { line, char } = this.position;
-      const cursor = this.positionToCursor({ line: line + amount, char });
-      this.setCursor(cursor);
-      if (shift) {
-        this.addToSelection(cursor);
+      if (this.autocompleteVisible) {
+        this.autocomplete.selected += amount;
       } else {
-        this.clearSelection();
+        const { line, char } = this.position;
+        const cursor = this.positionToCursor({ line: line + amount, char });
+        this.setCursor(cursor);
+        if (shift) {
+          this.addToSelection(cursor);
+        } else {
+          this.clearSelection();
+        }
       }
     },
     select(start = 0, end = Infinity) {
@@ -452,15 +452,62 @@ export default {
         this.current--;
       }
     },
+    onCursorUpdate(callback) {
+      this.cursorCallback = callback;
+    },
     updateCursor(notransition = false) {
       this.$nextTick(() => {
         const { top, left, height } = this.characters()[this.cursor].getBoundingClientRect();
         this.cursorAttributes = { top, left, height };
         this.cursorAttributes.transition = !notransition;
+        this.autocompleteVisible = false;
+        if (this.cursorCallback) {
+          this.cursorCallback();
+          this.cursorCallback = undefined;
+        }
       });
     },
     mouseUp() {
       this.selectionAllowed = false;
+    },
+    updateAutocomplete() {
+      let position = this.cursor - 1;
+      let start = '';
+      while (position >= 0 && this.text[position].match(/^[a-z]$/i)) {
+        start = this.text[position] + start;
+        position--;
+      }
+      const { left, top, height } = this.cursorAttributes;
+      this.autocomplete = {
+        x: left,
+        y: top + height,
+        start,
+        selected: 0,
+      };
+      if (start) this.autocompleteVisible = true;
+    },
+    autocompleteStatement() {
+      const { template, select } = this.autocompleteSelection;
+      if (template) {
+        const { start } = this.autocomplete;
+        const regex = new RegExp(`${start}`, 'i');
+        let newTemplate = template.substring(helper.indexOf(template, regex));
+        newTemplate = newTemplate.replace(/<.*?>/g, '');
+
+        const basePosition = this.cursor - start.length;
+        this.deleteTextAtCursor(basePosition); // delete starting text (the text that the user typed)
+        this.insertTextAtCursor(newTemplate); // insert autocomplete text
+
+        if (select && newTemplate.includes(select)) {
+          const startSelection = newTemplate.indexOf(select) + basePosition;
+          const endSelection = startSelection + select.length;
+
+          this.$nextTick(() => {
+            this.select(startSelection, endSelection);
+            this.setCursor(endSelection);
+          });
+        }
+      }
     },
   },
   created() {
@@ -487,8 +534,8 @@ export default {
 
 <style lang="sass" scoped>
 .editor
-  font-family: "Roboto Mono", monospace
-  font-size: .9em
+  font-family: "Courier New", monospace
+  font-size: 1em
   cursor: text
   user-select: none
   overflow: auto

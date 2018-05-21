@@ -29,6 +29,9 @@ export default code => {
     darkorchid: commands.map(command => [new RegExp(`${command}\\s*(?=\\()`, 'gi'), 0]),
     coral: reserved.map(val => [new RegExp(`\\W${val}(?!\\w)`, 'g'), 1]),
     crimson: operators.map(operator => [new RegExp(`\\W\\${operator}\\s+`, 'gi'), 1]),
+    darkgray: [
+      [/\/\/.*?(\n|$)/g, 0],
+    ],
   };
 
   Object.keys(colors).forEach(color => {

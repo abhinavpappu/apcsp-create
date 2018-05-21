@@ -1,5 +1,5 @@
 const helper = {
-  indexOf(str, regex, start) {
+  indexOf(str, regex, start = 0) {
     const index = str.slice(start).search(regex);
     return index > -1 ? start + index : -1;
   },
