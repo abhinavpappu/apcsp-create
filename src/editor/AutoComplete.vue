@@ -119,6 +119,7 @@ export default {
       if (this.isEmpty) {
         this.$emit('update:show', false);
       }
+      this.$emit('input', this.isEmpty ? {} : this.details[this.actualSelected]);
     },
     actualSelected() {
       this.$emit('input', this.isEmpty ? {} : this.details[this.actualSelected]);
