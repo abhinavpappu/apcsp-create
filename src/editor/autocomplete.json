@@ -94,7 +94,7 @@
     "select": "list"
   },
   "PROCEDURE": {
-    "template": "PROCEDURE name (parameter1, parameter2, ...) {\n  // instructions\n  RETURN (expression)}",
+    "template": "PROCEDURE name (parameter1, parameter2, ...) {\n  // instructions\n  RETURN (expression)\n}",
     "description": "A procedure, name, takes zero or more parameters. The procedure contains programming instructions and returns the value of expression. The RETURN statement may appear at any point inside the procedure and causes an immediate return from the procedure back to the calling program.",
     "variables": ["name", "parameter1", "parameter2", "expression"],
     "select": "parameter1, parameter2, ..."

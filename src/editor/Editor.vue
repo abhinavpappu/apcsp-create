@@ -473,7 +473,7 @@ export default {
     updateAutocomplete() {
       let position = this.cursor - 1;
       let start = '';
-      while (position >= 0 && this.text[position].match(/^[a-z]$/i)) {
+      while (position >= 0 && this.text[position].match(/^\w$/)) {
         start = this.text[position] + start;
         position--;
       }

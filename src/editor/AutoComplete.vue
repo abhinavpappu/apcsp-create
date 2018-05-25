@@ -128,7 +128,7 @@ export default {
       background: lightgray
 
   .details
-    width: 300px
+    width: 500px
 
     .template
       margin: 5px
