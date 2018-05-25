@@ -2,11 +2,11 @@
   <div class="container" v-show="show" :style="style">
     <div class="suggestions">
       <div
-        v-for="(suggestion, i) in suggestions"
+        v-for="(suggestion, i) in formattedSuggestions"
         :key="suggestion"
         class="suggestion"
         :class="{ selected: i === actualSelected }"
-      >{{ suggestion }}</div>
+        v-html="suggestion"/>
     </div>
 
     <div class="details">
@@ -45,6 +45,20 @@ export default {
         return terms;
       }
       return [];
+    },
+    formattedSuggestions() {
+      return this.suggestions.map(suggestion => {
+        const style = 'font-weight: bold;';
+        const lower = str => str.toLowerCase();
+        const start = lower(this.start);
+        const index = lower(suggestion).indexOf(start);
+        return `${suggestion.substring(0, index)}`
+          + `<span style="${style}">${suggestion.substr(index, start.length)}</span>`
+          + `${suggestion.substring(index + start.length)}`;
+      });
+    },
+    isEmpty() {
+      return this.suggestions.length === 0;
     },
     actualSelected() {
       let index = this.selected;
@@ -102,11 +116,12 @@ export default {
   },
   watch: {
     suggestions() {
-      const isEmpty = this.suggestions.length === 0;
-      if (isEmpty) {
+      if (this.isEmpty) {
         this.$emit('update:show', false);
       }
-      this.$emit('input', isEmpty ? {} : this.details[this.actualSelected]);
+    },
+    actualSelected() {
+      this.$emit('input', this.isEmpty ? {} : this.details[this.actualSelected]);
     },
   },
 };

@@ -135,6 +135,10 @@ export default {
         const styles = {
           color: 'black',
         };
+        if (isEnd) {
+          const lineNumber = document.querySelector('.line-number');
+          styles.minWidth = `${lineNumber ? lineNumber.offsetWidth : 20}px`;
+        }
 
         Object.keys(this.colors).forEach(color => {
           this.colors[color].forEach(range => {
@@ -461,6 +465,24 @@ export default {
         this.cursorAttributes = { top, left, height };
         this.cursorAttributes.transition = !notransition;
         this.autocompleteVisible = false;
+
+        // scroll editor to keep cursor in view
+        const $editor = this.$refs.editor;
+        const editorRight = $editor.offsetWidth + $editor.offsetLeft;
+        const editorBottom = $editor.offsetHeight + $editor.offsetTop;
+        const lineNumber = document.querySelector('.line-number');
+        const cursorMargin = lineNumber ? lineNumber.offsetWidth : 20; // minimum distance between cursor and edge
+        if (left < $editor.offsetLeft + cursorMargin) {
+          $editor.scrollLeft += (left - (cursorMargin + $editor.offsetLeft));
+        } else if (left > editorRight - cursorMargin) {
+          $editor.scrollLeft += left - (editorRight - cursorMargin);
+        }
+        if (top < $editor.offsetTop + cursorMargin) {
+          $editor.scrollTop += (top - (cursorMargin + $editor.offsetTop));
+        } else if (top > editorBottom - cursorMargin) {
+          $editor.scrollTop += top - (editorBottom - cursorMargin);
+        }
+
         if (this.cursorCallback) {
           this.cursorCallback();
           this.cursorCallback = undefined;
@@ -490,9 +512,11 @@ export default {
       const { template, select } = this.autocompleteSelection;
       if (template) {
         const { start } = this.autocomplete;
-        const regex = new RegExp(`${start}`, 'i');
-        let newTemplate = template.substring(helper.indexOf(template, regex));
-        newTemplate = newTemplate.replace(/<.*?>/g, '');
+
+        // start template from the first capital letter (ex. condition1 AND condition2)
+        const newTemplate = template
+          .substring(helper.indexOf(template, /[A-Z]/))
+          .replace(/<.*?>/g, '');
 
         const basePosition = this.cursor - start.length;
         this.deleteTextAtCursor(basePosition); // delete starting text (the text that the user typed)
