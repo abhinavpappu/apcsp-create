@@ -28,7 +28,7 @@
     "eslint-plugin-html": "^4.0.2",
     "eslint-plugin-import": "^2.8.0",
     "eslint-plugin-vue": "^4.2.2",
-    "node-sass": "^4.7.2",
+    "node-sass": "^4.13.1",
     "postcss-loader": "^2.1.0",
     "sass-loader": "^6.0.6",
     "uglifyjs-webpack-plugin": "^1.1.8",
@@ -37,7 +37,7 @@
     "vue-style-loader": "^4.0.2",
     "vue-template-compiler": "^2.5.13",
     "webpack": "^3.11.0",
-    "webpack-dev-server": "^2.11.1"
+    "webpack-dev-server": "^2.11.5"
   },
   "scripts": {
     "serve": "cross-env NODE_ENV=production webpack-dev-server --open",
