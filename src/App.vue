@@ -37,6 +37,8 @@ import Controls from './Controls.vue';
 import GridSimulator from './display/GridSimulator.vue';
 import Console from './display/Console.vue';
 
+const MAX_STATES = 1000;
+
 export default {
   data() {
     return {
@@ -157,7 +159,7 @@ export default {
         helper.findAllIndexesOf(newCode, regex).forEach(index => {
           const start = newCode.indexOf('(', index);
           const end = helper.findCorresponding(newCode, start, '(', ')');
-          const sub = newCode.slice(start + 1, end).replace(/([^=])=([^=])/, '$1===$2');
+          const sub = newCode.slice(start + 1, end).replace(/([^=><])=([^=])/, '$1===$2');
           newCode = `${newCode.slice(0, start + 1)}${sub}${newCode.slice(end)}`;
         });
       });
@@ -201,7 +203,7 @@ export default {
               text: 'CRASH!',
               style: { fontSize: '3em', color: 'red' },
             };
-          } else if (this.states.length > 1000) {
+          } else if (this.states.length > MAX_STATES) {
             globals.continue = false;
             this.endMessage = {
               text: 'Error. Check for infinite loops',
