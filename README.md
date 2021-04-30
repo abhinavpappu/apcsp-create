@@ -1,5 +1,7 @@
 # apcsp_create
 
+[![Deploy to Netlify](https://www.netlify.com/img/deploy/button.svg)](https://app.netlify.com/start/deploy?repository=https://github.com/abhinavpappu/apcsp-create)
+
 Project for the AP Computer Science Principles CREATE task.
 
 It's a code editor that allows you to actually run the pseudo code that APCSP uses. There's even a turtle simulator so you can use commands such as MOVE_FORWARD()!
