@@ -23,7 +23,12 @@ Prerequisites: Install [Node.js](https://nodejs.org/) version `>= 10.16.0`
 2. Then run one of the following commands:
     - `npm run dev` (runs the development server which is super fast and updates live as changes are made to files)
     - `npm run build` (creates a folder called `dist` with the production build of plain HTML, CSS, and JS files)
-    - `npm run serve` (runs a production server)
+    - `npm run serve` (runs a server to locally preview the production build)
+
+## Deploying to production
+- The easiest way to create your own copy of this site is to click on the `Deploy to Netlify` button at the top of this README and it should walk you through everything. It's free! (with limits that you'll probably never run into)
+- If you already have a server that can serve static files, then click on the most recent workflow run in the [Actions tab](https://github.com/abhinavpappu/apcsp-create/actions/workflows/create-zip.yml) and scroll down to `Artifacts`. Then click on the artifact named `Build` to download a zip file containing static assets that can be copied over to the server.
+  - You can also follow the instructions [above](#how-to-run-locally) and run `npm run build` to generate the same static assets
 
 ## License
 [MIT](LICENSE)
