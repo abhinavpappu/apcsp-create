@@ -18,9 +18,8 @@ jobs:
     # Runs a single command using the runners shell
     - name: Send greeting
       run: echo "Hello world!"
-      
-    - name: See filesystem
-      run: ls
+
+    - uses: actions/checkout@v2
 
     - name: Setup Node.js environment
       uses: actions/setup-node@v2.1.5
