@@ -29,12 +29,14 @@ jobs:
 
     - run: npm ci
     - run: npm run build
-
-    - name: Easy Zip Files
-      uses: vimtor/action-zip@v1
+    
+    - name: Remove old artifacts
+      # You may pin to the exact commit or the version.
+      # uses: c-hive/gha-remove-artifacts@24dc23384a1fa6a058b79c73727ae0cb2200ca4c
+      uses: c-hive/gha-remove-artifacts@v1.2.0
       with:
-        files: index.html dist/
-        dest: build.zip
+        # Artifacts older than this will be deleted (e.g. "2 months", "1 day"). Parsed by moment.
+        age: "1 day"
 
     - name: Upload a Build Artifact
       uses: actions/upload-artifact@v2.2.3
@@ -42,5 +44,5 @@ jobs:
         # Artifact name
         name: build
         # A file, directory or wildcard pattern that describes what to upload
-        path: build.zip
+        path: dist
         retention-days: 90
