@@ -1,0 +1,44 @@
+name: Create zip file of build on every push 
+
+# Controls when the action will run.
+on:
+  push:
+    branches:
+      - master
+
+# A workflow run is made up of one or more jobs that can run sequentially or in parallel
+jobs:
+  # This workflow contains a single job called "create-zip"
+  create-zip:
+    # The type of runner that the job will run on
+    runs-on: ubuntu-latest
+
+    # Steps represent a sequence of tasks that will be executed as part of the job
+    steps:
+    # Runs a single command using the runners shell
+    - name: Send greeting
+      run: echo "Hello ${{ github.event.inputs.name }}"
+
+    - name: Setup Node.js environment
+      uses: actions/setup-node@v2.1.5
+      with:
+        # Version Spec of the version to use.  Examples: 12.x, 10.15.1, >=10.15.0
+        node-version: ">=10.15.0" # TODO: fix
+
+    - run: npm ci
+    - run: npm run build
+
+    - name: Easy Zip Files
+      uses: vimtor/action-zip@v1
+      with:
+        files: index.html dist/
+        dest: build.zip
+
+    - name: Upload a Build Artifact
+      uses: actions/upload-artifact@v2.2.3
+      with:
+        # Artifact name
+        name: build
+        # A file, directory or wildcard pattern that describes what to upload
+        path: build.zip
+        retention-days: 90
