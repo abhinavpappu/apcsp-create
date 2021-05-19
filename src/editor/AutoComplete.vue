@@ -134,7 +134,7 @@ export default {
   position: fixed
   background: white
   box-shadow: 0 2px 4px -1px rgba(0,0,0,.2), 0 4px 5px 0 rgba(0,0,0,.14), 0 1px 10px 0 rgba(0,0,0,.12)
-  z-index: 5;
+  z-index: 5
 
   .suggestion
     width: 150px
@@ -149,7 +149,7 @@ export default {
     .template
       margin: 5px
       font-size: 1.05em
-      white-space: pre;
+      white-space: pre
 
     .description
       margin: 5px
