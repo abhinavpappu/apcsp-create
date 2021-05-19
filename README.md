@@ -16,3 +16,14 @@ Version of the pseudocode this project supports: [ap-computer-science-principles
   - Limitation: In order to enable step forward and step backward, we save every "state" of the program. For convenience of implementation, I define that every function call (and only function calls) constitutes a state change (which you can observe with the step forward and backward commands). The entire set of states is precalculated when you click on run. Therefore, any program that uses more than 1000 "states" (function calls) is assumed to contain an infinite loop and the program terminates. If you're running a super long program on this tool for some reason, please run it locally and change the variable `MAX_STATES` in `App.vue`
 
 Feel free to open issues for any bugs or any updates to the language specification! (Or attempt to read through the mess of code and contribute yourself!)
+
+## How to run locally
+Prerequisites: Install [Node.js](https://nodejs.org/) version `>= 10.16.0`
+1. In the root folder of this repository, run `npm install`
+2. Then run one of the following commands:
+    - `npm run dev` (runs the development server which is super fast and updates live as changes are made to files)
+    - `npm run build` (creates a folder called `dist` with the production build of plain HTML, CSS, and JS files)
+    - `npm run serve` (runs a production server)
+
+## License
+[MIT](LICENSE)
