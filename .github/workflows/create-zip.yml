@@ -17,7 +17,10 @@ jobs:
     steps:
     # Runs a single command using the runners shell
     - name: Send greeting
-      run: echo "Hello ${{ github.event.inputs.name }}"
+      run: echo "Hello world!"
+      
+    - name: See filesystem
+      run: ls
 
     - name: Setup Node.js environment
       uses: actions/setup-node@v2.1.5
