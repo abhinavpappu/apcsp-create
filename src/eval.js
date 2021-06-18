@@ -2,6 +2,10 @@ export default (code, $_add = {}) => {
   const globals = Object.getOwnPropertyNames(window);
   globals.splice(globals.indexOf('eval'), 1);
 
+  // to avoid "SyntaxError: Unexpected token 'import'" when trying to do "var import = undefined"
+  // since `import` is reserved keyword, but this is fine since `import` isn't allowed in `eval` anyway
+  globals.splice(globals.indexOf('import'), 1);
+
   let removeGlobals = '';
   globals.forEach(property => {
     removeGlobals += `var ${property} = undefined;`;

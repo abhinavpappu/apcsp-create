@@ -10,12 +10,12 @@
     <textarea
       class="input"
       v-model="inputValue"
-      @input="onTextInput"
+      @input="handleInputChange"
       @keydown.right.stop.prevent="moveCursor(1, $event.shiftKey)"
       @keydown.left.stop.prevent="moveCursor(-1, $event.shiftKey)"
       @keydown.up.stop.prevent="moveLine(-1, $event.shiftKey)"
       @keydown.down.stop.prevent="moveLine(1, $event.shiftKey)"
-      @keydown.tab.stop.prevent="insertTextAtCursor('\t')"
+      @keydown.tab.stop.prevent="handleTextInput('\t')"
       @keydown.ctrl="specialKey"
       @keydown.meta="specialKey"
       @blur="hideCursor = true"
@@ -73,7 +73,7 @@ export default {
       },
       hideCursor: true,
       cursorCallback: false,
-      inputValue: '  ',
+      inputValue: '  ', // the two spaces are used to detect backspace and delete
       selectionStart: 0,
       selectionEnd: 0,
       selectionAllowed: false,
@@ -195,27 +195,13 @@ export default {
       this.inputValue = '  ';
       this.$nextTick(() => this.$refs.input.setSelectionRange(1, 1));
     },
-    onTextInput() {
+    handleInputChange() {
       const { input } = this.$refs;
       let value = this.inputValue;
       if (value.length >= 3 && input.selectionStart === value.length - 1) {
         value = value.slice(1, value.length - 1);
         this.deleteSelection();
-        const { line, char } = this.position;
-        if (value === '\n') {
-          if (this.autocompleteVisible) { // if autocomplete visible, pressing enter will select suggestion instead
-            this.autocompleteStatement();
-            value = '';
-          } else {
-            // keep indentation when adding lines
-            value += this.indentation[line];
-            if (this.text[this.cursor - 1] === '{') value += '  '; // extra indent if {
-          }
-        }
-        if (value === '}' && this.lines[line].slice(0, char).match(/^  +$/)) { // dedent if }
-          this.deleteTextAtCursor(this.cursor - 2);
-        }
-        this.insertTextAtCursor(value);
+        this.handleTextInput(value);
       } else if (value.length === 1) {
         if (input.selectionStart === 0) {
           this.backspace();
@@ -226,6 +212,28 @@ export default {
       this.resetInput();
 
       this.onCursorUpdate(this.updateAutocomplete);
+    },
+    handleTextInput(value) {
+      const { line, char } = this.position;
+
+      // if autocomplete visible, pressing enter or tab will select suggestion instead
+      if (this.autocompleteVisible && ['\n', '\t'].includes(value)) {
+        this.autocompleteStatement();
+        value = '';
+      }
+
+      // keep indentation when adding lines
+      if (value === '\n') {
+        value += this.indentation[line];
+        if (this.text[this.cursor - 1] === '{') value += '  '; // extra indent if {
+      }
+
+      // dedent if "}" (with checking to make sure only spaces precede cursor on that line, and at least 2)
+      if (value === '}' && this.lines[line].slice(0, char).match(/^  +$/)) {
+        this.deleteTextAtCursor(this.cursor - 2);
+      }
+
+      this.insertTextAtCursor(value);
     },
     insertText(text, location, save = true) {
       let newText = text;
