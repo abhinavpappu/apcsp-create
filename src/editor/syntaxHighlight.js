@@ -10,7 +10,7 @@ export default code => {
     'MOVE_FORWARD', 'ROTATE_RIGHT', 'ROTATE_LEFT', 'CAN_MOVE'];
   const reserved = ['forward', 'right', 'left', 'backward', 'true', 'false'];
   const operators = ['+', '-', '*', '/', 'MOD', '%', '<-', '=', '≠', '>', '<', '≥', '≤',
-    'NOT', '!', 'AND', 'OR'];
+    '>=', '<=', 'NOT', '!', 'AND', 'OR'];
 
   const colors = {
     // [regex, start offset]
