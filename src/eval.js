@@ -1,4 +1,4 @@
-export default (code, $_add = {}) => {
+export default (code, $_add = {}, evaluatedCodeCallback = null) => {
   const globals = Object.getOwnPropertyNames(window);
   globals.splice(globals.indexOf('eval'), 1);
 
@@ -20,6 +20,10 @@ export default (code, $_add = {}) => {
   code = undefined;
   removeGlobals = undefined;
   addGlobals = undefined;
+
+  if (evaluatedCodeCallback) {
+    evaluatedCodeCallback(newCode);
+  }
 
   // eslint-disable-next-line no-eval
   eval(newCode);

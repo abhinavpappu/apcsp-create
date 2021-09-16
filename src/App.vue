@@ -281,6 +281,7 @@ export default {
         return value;
       };
 
+      let evaluatedCode = '';
       try {
         safeEval(this.code, {
           $_number: Number, // using it to parse input() when it should be a number
@@ -301,10 +302,12 @@ export default {
           ROTATE_RIGHT,
           ROTATE_LEFT,
           CAN_MOVE,
-        });
+        }, code => evaluatedCode = code);
 
         this.play();
       } catch (e) {
+        console.error(e);
+        sessionStorage.evaluatedCode = evaluatedCode;
         this.displayed.push({
           text: `${e.name}: ${e.message}`,
           style: { color: 'red', fontSize: '1em' },
