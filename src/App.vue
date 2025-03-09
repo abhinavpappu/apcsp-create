@@ -70,7 +70,7 @@ export default {
   methods: {
     addLineNumbers(code) {
       const commands = ['DISPLAY', 'INPUT', 'RANDOM', 'INSERT', 'APPEND', 'REMOVE', 'LENGTH',
-        'MOVE_FORWARD', 'ROTATE_RIGHT', 'ROTATE_LEFT', 'CAN_MOVE'];
+        'MOVE_FORWARD', 'ROTATE_RIGHT', 'ROTATE_LEFT', 'CAN_MOVE', 'GOAL_REACHED'];
 
       const modifications = [];
       for (let i = 0; i < code.length; i++) {
@@ -276,6 +276,12 @@ export default {
         return isValid;
       };
 
+      const GOAL_REACHED = () => start => end => {
+        const isGoal = $grid.isGoal(position);
+        saveState(start, end, String(isGoal));
+        return isGoal;
+      }
+
       const identity = value => start => end => {
         saveState(start, end, String(value));
         return value;
@@ -302,6 +308,7 @@ export default {
           ROTATE_RIGHT,
           ROTATE_LEFT,
           CAN_MOVE,
+          GOAL_REACHED,
         }, code => evaluatedCode = code);
 
         this.play();

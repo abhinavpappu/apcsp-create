@@ -9,6 +9,7 @@ It's a code editor that allows you to actually run the pseudo code that APCSP us
 Try it out here: https://apcsp-code.netlify.app/
 
 Version of the pseudocode this project supports: [ap-computer-science-principles-exam-reference-sheet.pdf](./ap-computer-science-principles-exam-reference-sheet.pdf)
+  - We additonally support the instruction `GOAL_REACHED()`, which evaluates to `true` if the robot is on the green square and `false` otherwise
 
 #### Notes:
   - You can use `=` or `<-` instead of `←` (you can also use `←` if you really want)

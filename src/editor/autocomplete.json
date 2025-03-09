@@ -116,5 +116,9 @@
     "description": "Evaluates to true if there is an open square one square in the direction relative to where the robot is facing; otherwise evaluates to false. The value of direction can be left, right, forward, or backward.",
     "variables": ["direction"],
     "select": "direction"
+  },
+  "GOAL_REACHED": {
+    "template": "GOAL_REACHED()",
+    "description": "Evaluates to true if the robot is on the green square; otherwise evaluates to false"
   }
 }

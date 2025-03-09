@@ -7,7 +7,7 @@ export default code => {
   };
 
   const commands = ['DISPLAY', 'INPUT', 'RANDOM', 'INSERT', 'APPEND', 'REMOVE', 'LENGTH',
-    'MOVE_FORWARD', 'ROTATE_RIGHT', 'ROTATE_LEFT', 'CAN_MOVE'];
+    'MOVE_FORWARD', 'ROTATE_RIGHT', 'ROTATE_LEFT', 'CAN_MOVE', 'GOAL_REACHED'];
   const reserved = ['forward', 'right', 'left', 'backward', 'true', 'false'];
   const operators = ['+', '-', '*', '/', 'MOD', '%', '<-', '=', '≠', '>', '<', '≥', '≤',
     '>=', '<=', 'NOT', '!', 'AND', 'OR'];
