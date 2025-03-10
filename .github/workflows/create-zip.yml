@@ -27,7 +27,7 @@ jobs:
     - uses: actions/checkout@v2
     
     - name: Cache node_modules
-      uses: actions/cache@v2.1.5
+      uses: actions/cache@v4.2.2
       with:
         # A list of files, directories, and wildcard patterns to cache and restore
         path: node_modules
@@ -55,7 +55,7 @@ jobs:
         age: "1 minute"
 
     - name: Upload a Build Artifact
-      uses: actions/upload-artifact@v2.2.3
+      uses: actions/upload-artifact@v4.6.1
       with:
         # Artifact name
         name: build
