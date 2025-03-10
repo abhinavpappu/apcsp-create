@@ -34,5 +34,11 @@
   "bugs": {
     "url": "https://github.com/apappu9/apcsp-create/issues"
   },
-  "homepage": "https://github.com/apappu9/apcsp-create#readme"
+  "homepage": "https://github.com/apappu9/apcsp-create#readme",
+  "volta": {
+    "node": "18.14.0"
+  },
+  "engines": {
+    "node": "^18.14.0"
+  }
 }
